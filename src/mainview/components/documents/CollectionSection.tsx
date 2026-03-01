@@ -35,6 +35,7 @@ function DocumentTreeItem({
 	onCreateDocument: (collectionId: number, parentId?: number | null) => void;
 }) {
 	const children = getChildDocuments(byParent, doc.id);
+	const [expanded, setExpanded] = useState(true);
 	return (
 		<>
 			<DocumentListItem
@@ -47,19 +48,23 @@ function DocumentTreeItem({
 						? () => onCreateDocument(collectionId, doc.id)
 						: undefined
 				}
+				hasChildren={children.length > 0}
+				expanded={expanded}
+				onToggleExpand={children.length > 0 ? () => setExpanded((e) => !e) : undefined}
 			/>
-			{children.map((child) => (
-				<DocumentTreeItem
-					key={child.id}
-					doc={child}
-					depth={depth + 1}
-					collectionId={collectionId}
-					byParent={byParent}
-					selectedId={selectedId}
-					onSelect={onSelect}
-					onCreateDocument={onCreateDocument}
-				/>
-			))}
+			{expanded &&
+				children.map((child) => (
+					<DocumentTreeItem
+						key={child.id}
+						doc={child}
+						depth={depth + 1}
+						collectionId={collectionId}
+						byParent={byParent}
+						selectedId={selectedId}
+						onSelect={onSelect}
+						onCreateDocument={onCreateDocument}
+					/>
+				))}
 		</>
 	);
 }
@@ -202,7 +207,7 @@ export function CollectionSection({
 							New note
 						</Button>
 					</div>
-					<ul className="mt-1 flex flex-col gap-0.5" role="list">
+					<ul className="mt-1 flex flex-col gap-0.5 px-2" role="list">
 						{roots.map((doc) => (
 							<DocumentTreeItem
 								key={doc.id}

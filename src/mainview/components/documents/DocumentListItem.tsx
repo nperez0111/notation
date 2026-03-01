@@ -8,6 +8,12 @@ type DocumentListItemProps = {
 	depth?: number;
 	/** Called to create a child document under this one. */
 	onCreateChild?: () => void;
+	/** Whether this document has nested children (shows expand/collapse chevron). */
+	hasChildren?: boolean;
+	/** Whether nested children are currently expanded. */
+	expanded?: boolean;
+	/** Toggle expand/collapse of nested children. */
+	onToggleExpand?: () => void;
 };
 
 const DEPTH_PADDING = 12; // px per nesting level
@@ -18,6 +24,9 @@ export function DocumentListItem({
 	onSelect,
 	depth = 0,
 	onCreateChild,
+	hasChildren = false,
+	expanded = true,
+	onToggleExpand,
 }: DocumentListItemProps) {
 	const title = doc.title?.trim() || "Untitled";
 	const date = new Date(doc.updatedAt).toLocaleDateString(undefined, {
@@ -28,12 +37,34 @@ export function DocumentListItem({
 	const indent = depth * DEPTH_PADDING;
 
 	return (
-		<li className="group relative">
+		<li
+			className="group relative flex min-w-0 items-center gap-0 overflow-hidden"
+			style={hasChildren ? { paddingLeft: indent } : undefined}
+		>
+			{hasChildren && (
+				<button
+					type="button"
+					onClick={(e) => {
+						e.stopPropagation();
+						onToggleExpand?.();
+					}}
+					className="flex shrink-0 items-center justify-center rounded p-0.5 text-text-muted hover:bg-surface-hover hover:text-[var(--color-text)] w-5 min-w-[20px]"
+					aria-expanded={expanded}
+					aria-label={expanded ? "Collapse nested documents" : "Expand nested documents"}
+				>
+					<span
+						className={`inline-block transition-transform ${expanded ? "rotate-90" : ""}`}
+						aria-hidden
+					>
+						▸
+					</span>
+				</button>
+			)}
 			<button
 				type="button"
 				onClick={onSelect}
-				style={{ paddingLeft: indent + 12 }}
-				className={`w-full rounded-lg py-2.5 pr-8 text-left text-sm transition-colors ${
+				style={{ paddingLeft: hasChildren ? 8 : indent + 12 }}
+				className={`min-w-0 flex-1 rounded-lg py-2.5 pr-8 text-left text-sm transition-colors ${
 					isSelected
 						? "bg-accent-muted text-accent-text font-medium"
 						: "text-text-muted hover:bg-surface-hover hover:text-[var(--color-text)]"
