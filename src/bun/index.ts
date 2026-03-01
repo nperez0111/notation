@@ -19,30 +19,47 @@ if (!existsSync(dataDir)) {
 const dbPath = join(dataDir, "documents.db");
 const db = new Database(dbPath, { create: true });
 
-// Create documents table: id, metadata (createdAt, updatedAt, createdBy, updatedBy), content (BlockNote JSON)
+// Create documents table: id, title, metadata, content, properties (opaque JSON)
 db.exec(`
   CREATE TABLE IF NOT EXISTS documents (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
+    title TEXT NOT NULL DEFAULT '',
     created_at TEXT NOT NULL DEFAULT (datetime('now')),
     updated_at TEXT NOT NULL DEFAULT (datetime('now')),
     created_by TEXT NOT NULL DEFAULT '',
     updated_by TEXT NOT NULL DEFAULT '',
-    content TEXT NOT NULL DEFAULT '[]'
+    content TEXT NOT NULL DEFAULT '[]',
+    properties TEXT NOT NULL DEFAULT '{}'
   )
 `);
 
+// Migration: add title and properties if table already existed without them
+try {
+	db.exec("ALTER TABLE documents ADD COLUMN title TEXT NOT NULL DEFAULT ''");
+} catch {
+	/* column exists */
+}
+try {
+	db.exec("ALTER TABLE documents ADD COLUMN properties TEXT NOT NULL DEFAULT '{}'");
+} catch {
+	/* column exists */
+}
+
+const docColumns =
+	"id, title, created_at as createdAt, updated_at as updatedAt, created_by as createdBy, updated_by as updatedBy, content, properties";
+
 // Prepared statements
 const getAllDocuments = db.prepare(
-	"SELECT id, created_at as createdAt, updated_at as updatedAt, created_by as createdBy, updated_by as updatedBy, content FROM documents ORDER BY updated_at DESC",
+	`SELECT ${docColumns} FROM documents ORDER BY updated_at DESC`,
 );
 const getDocumentById = db.prepare(
-	"SELECT id, created_at as createdAt, updated_at as updatedAt, created_by as createdBy, updated_by as updatedBy, content FROM documents WHERE id = ?",
+	`SELECT ${docColumns} FROM documents WHERE id = ?`,
 );
 const insertDocument = db.prepare(
-	"INSERT INTO documents (content, created_by, updated_by) VALUES (?, ?, ?) RETURNING id, created_at as createdAt, updated_at as updatedAt, created_by as createdBy, updated_by as updatedBy, content",
+	`INSERT INTO documents (title, content, created_by, updated_by, properties) VALUES (?, ?, ?, ?, ?) RETURNING ${docColumns}`,
 );
 const updateDocumentStmt = db.prepare(
-	"UPDATE documents SET content = ?, updated_by = ?, updated_at = datetime('now') WHERE id = ? RETURNING id, created_at as createdAt, updated_at as updatedAt, created_by as createdBy, updated_by as updatedBy, content",
+	`UPDATE documents SET title = ?, content = ?, updated_by = ?, updated_at = datetime('now'), properties = ? WHERE id = ? RETURNING ${docColumns}`,
 );
 const deleteDocumentStmt = db.prepare("DELETE FROM documents WHERE id = ?");
 
@@ -52,18 +69,30 @@ const documentRPC = BrowserView.defineRPC<DocumentRPC>({
 		requests: {
 			getDocuments: () => getAllDocuments.all() as Document[],
 			getDocument: ({ id }) => (getDocumentById.get(id) as Document) ?? null,
-			createDocument: ({ content, createdBy, updatedBy }) => {
+			createDocument: ({ title, content, createdBy, updatedBy, properties }) => {
+				const props = properties ?? "{}";
 				return insertDocument.get(
+					title,
 					content,
 					createdBy,
 					updatedBy,
+					props,
 				) as Document;
 			},
-			updateDocument: ({ id, content, updatedBy }) => {
-				const row = updateDocumentStmt.get(content, updatedBy, id) as
-					| Document
-					| undefined;
-				return row ?? null;
+			updateDocument: ({ id, title, content, updatedBy, properties }) => {
+				const row = getDocumentById.get(id) as Document | undefined;
+				if (!row) return null;
+				const newTitle = title ?? row.title;
+				const newContent = content ?? row.content;
+				const newProps = properties ?? row.properties;
+				const updated = updateDocumentStmt.get(
+					newTitle,
+					newContent,
+					updatedBy,
+					newProps,
+					id,
+				) as Document | undefined;
+				return updated ?? null;
 			},
 			deleteDocument: ({ id }) => {
 				deleteDocumentStmt.run(id);

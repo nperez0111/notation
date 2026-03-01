@@ -42,12 +42,18 @@ function DocumentList({
 									? "bg-indigo-100 text-indigo-800"
 									: "text-gray-700 hover:bg-gray-100"
 							}`}
+							title={doc.title || "Untitled"}
 						>
-							{new Date(doc.updatedAt).toLocaleDateString(undefined, {
-								month: "short",
-								day: "numeric",
-								year: "numeric",
-							})}
+							<span className="block truncate font-medium">
+								{doc.title || "Untitled"}
+							</span>
+							<span className="block text-xs text-gray-500 mt-0.5">
+								{new Date(doc.updatedAt).toLocaleDateString(undefined, {
+									month: "short",
+									day: "numeric",
+									year: "numeric",
+								})}
+							</span>
 						</button>
 					</li>
 				))}
@@ -59,11 +65,15 @@ function DocumentList({
 function Editor({
 	documentId,
 	initialContent,
+	initialTitle,
+	initialProperties,
 	onSave,
 }: {
 	documentId: number;
 	initialContent: string;
-	onSave: (content: string) => void;
+	initialTitle: string;
+	initialProperties: string;
+	onSave: (payload: { content: string; title?: string; properties?: string }) => void;
 }) {
 	const parsed = useMemo((): PartialBlock[] | undefined => {
 		try {
@@ -78,22 +88,44 @@ function Editor({
 		initialContent: parsed,
 	});
 
+	const [title, setTitle] = useState(initialTitle);
+
+	const [properties] = useState(initialProperties);
+
 	const debouncedSave = useMemo(() => {
 		let timer: ReturnType<typeof setTimeout>;
-		return (doc: Block[]) => {
+		return (doc: Block[], titleValue?: string) => {
 			clearTimeout(timer);
-			timer = setTimeout(() => onSave(JSON.stringify(doc)), 500);
+			timer = setTimeout(
+				() =>
+					onSave({
+						content: JSON.stringify(doc),
+						title: titleValue,
+						properties,
+					}),
+				500,
+			);
 		};
-	}, [onSave]);
+	}, [onSave, properties]);
 
 	if (!editor) return <div className="p-4 text-gray-500">Loading editor…</div>;
 
 	return (
 		<div className="flex-1 min-w-0 flex flex-col">
+			<div className="shrink-0 border-b border-gray-200 px-4 py-2 bg-gray-50/80">
+				<input
+					type="text"
+					value={title}
+					onChange={(e) => setTitle(e.target.value)}
+					onBlur={() => debouncedSave(editor.document as Block[], title)}
+					placeholder="Untitled"
+					className="w-full text-lg font-semibold bg-transparent border-0 focus:ring-0 focus:outline-none"
+				/>
+			</div>
 			<BlockNoteView
 				editor={editor}
 				className="flex-1 min-h-0"
-				onChange={() => debouncedSave(editor.document as Block[])}
+				onChange={() => debouncedSave(editor.document as Block[], title)}
 			/>
 		</div>
 	);
@@ -133,31 +165,39 @@ export default function App() {
 
 	const createDocument = useCallback(async () => {
 		const doc = await rpc.createDocument({
+			title: "",
 			content: "[]",
 			createdBy: DEFAULT_USER,
 			updatedBy: DEFAULT_USER,
+			properties: "{}",
 		});
 		setDocuments((prev) => [doc, ...prev]);
 		setSelectedId(doc.id);
 	}, [rpc]);
 
 	const saveDocument = useCallback(
-		async (content: string) => {
+		async (payload: {
+			content: string;
+			title?: string;
+			properties?: string;
+		}) => {
 			if (currentDoc == null) return;
-			await rpc.updateDocument({
+			const updated = await rpc.updateDocument({
 				id: currentDoc.id,
-				content,
+				title: payload.title,
+				content: payload.content,
 				updatedBy: DEFAULT_USER,
+				properties: payload.properties,
 			});
-			setCurrentDoc((prev) =>
-				prev ? { ...prev, content, updatedAt: new Date().toISOString() } : null,
-			);
+			if (!updated) return;
+			const next = {
+				...currentDoc,
+				...updated,
+				updatedAt: updated.updatedAt ?? new Date().toISOString(),
+			};
+			setCurrentDoc(next);
 			setDocuments((prev) =>
-				prev.map((d) =>
-					d.id === currentDoc.id
-						? { ...d, content, updatedAt: new Date().toISOString() }
-						: d,
-				),
+				prev.map((d) => (d.id === currentDoc.id ? next : d)),
 			);
 		},
 		[currentDoc, rpc],
@@ -190,6 +230,8 @@ export default function App() {
 						key={currentDoc.id}
 						documentId={currentDoc.id}
 						initialContent={currentDoc.content}
+						initialTitle={currentDoc.title ?? ""}
+						initialProperties={currentDoc.properties ?? "{}"}
 						onSave={saveDocument}
 					/>
 				) : (
