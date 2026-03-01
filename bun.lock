@@ -5,6 +5,7 @@
     "": {
       "name": "electrobun-react-tailwind-vite",
       "dependencies": {
+        "@atlaskit/pragmatic-drag-and-drop": "1.7.7",
         "@blocknote/core": "0.47.0",
         "@blocknote/mantine": "0.47.0",
         "@blocknote/react": "0.47.0",
@@ -31,6 +32,8 @@
   },
   "packages": {
     "@alloc/quick-lru": ["@alloc/quick-lru@5.2.0", "", {}, "sha512-UrcABB+4bUrFABwbluTIBErXwvbsU/V7TZWfmbgJfbkwiBuziS9gxdODUyuiecfdGQ85jglMW6juS3+z5TsKLw=="],
+
+    "@atlaskit/pragmatic-drag-and-drop": ["@atlaskit/pragmatic-drag-and-drop@1.7.7", "", { "dependencies": { "@babel/runtime": "^7.0.0", "bind-event-listener": "^3.0.0", "raf-schd": "^4.0.3" } }, "sha512-jX+68AoSTqO/fhCyJDTZ38Ey6/wyL2Iq+J/moanma0YyktpnoHxevjY1UNJHYp0NCburdQDZSL1ZFac1mO1osQ=="],
 
     "@babel/code-frame": ["@babel/code-frame@7.27.1", "", { "dependencies": { "@babel/helper-validator-identifier": "^7.27.1", "js-tokens": "^4.0.0", "picocolors": "^1.1.1" } }, "sha512-cjQ7ZlQ0Mv3b47hABuTevyTuYN4i+loJKGeV9flcCgIK37cCXRh+L1bd3iBHlynerhQ7BhCkn2BPbQUL+rGqFg=="],
 
@@ -377,6 +380,8 @@
     "baseui": ["baseui@16.1.1", "", { "dependencies": { "@date-io/date-fns": "^2.13.1", "@date-io/moment": "^2.13.1", "axe-core": "^4.11.0", "card-validator": "^6.2.0", "csstype": "2.6.11", "d3": "^7.9.0", "date-fns": "^2.28.0", "date-fns-tz": "^1.2.2", "just-extend": "4.1.1", "memoize-one": "5.0.0", "mockdate": "2.0.5", "moment": "^2.29.4", "polished": "^4.2.2", "popper.js": "^1.16.1", "prop-types": "^15.8.1", "react-dropzone": "9.0.0", "react-focus-lock": "^2.8.1", "react-hook-form": "^7.30.0", "react-input-mask": "^2.0.4", "react-is": "^17.0.2", "react-map-gl": "5.2.13", "react-movable": "^3.0.4", "react-multi-ref": "^1.0.0", "react-range": "^1.8.12", "react-uid": "2.3.0", "react-virtualized": "^9.22.3", "react-virtualized-auto-sizer": "1.0.2", "react-window": "1.8.5", "resize-observer-polyfill": "1.5.1", "styletron-standard": "^3.1.0" }, "peerDependencies": { "react": ">=18", "react-dom": ">=18", "styletron-react": ">=6" } }, "sha512-pux441GCtmYrI8NE1SYqwsDnBad47msc7T/6p9JhHYrqYKo2y52YAO+7oSoFqIdaJxoY9r443U14hDkF68p56w=="],
 
     "binary-extensions": ["binary-extensions@2.3.0", "", {}, "sha512-Ceh+7ox5qe7LJuLHoY0feh3pHuUDHAcRUeyL2VYghZwfpkNIy/+8Ocg0a3UuSoYzavmylwuLWQOf3hl0jjMMIw=="],
+
+    "bind-event-listener": ["bind-event-listener@3.0.0", "", {}, "sha512-PJvH288AWQhKs2v9zyfYdPzlPqf5bXbGMmhmUIY9x4dAUGIWgomO771oBQNwJnMQSnUIXhKu6sgzpBRXTlvb8Q=="],
 
     "brace-expansion": ["brace-expansion@2.0.2", "", { "dependencies": { "balanced-match": "^1.0.0" } }, "sha512-Jt0vHyM+jmUBqojB7E1NIYadt0vI0Qxjxd2TErW94wDz+E2LAm5vKMXXwg6ZZBTHPuUlDgQHKXvjGBdfcF1ZDQ=="],
 
@@ -951,6 +956,8 @@
     "queue-microtask": ["queue-microtask@1.2.3", "", {}, "sha512-NuaNSa6flKT5JaSYQzJok04JzTL1CA6aGhv5rfLW3PgqA+M2ChpZQnAC8h8i4ZFkBS8X5RqkDBHA7r4hej3K9A=="],
 
     "quickselect": ["quickselect@2.0.0", "", {}, "sha512-RKJ22hX8mHe3Y6wH/N3wCM6BWtjaxIyyUIkpHOvfFnxdI4yD4tBXEBKSbriGujF6jnSVkJrffuo6vxACiSSxIw=="],
+
+    "raf-schd": ["raf-schd@4.0.3", "", {}, "sha512-tQkJl2GRWh83ui2DiPTJz9wEiMN20syf+5oKfB03yYP7ioZcJwsIK8FjrtLwH1m7C7e+Tt2yYBlrOpdT+dyeIQ=="],
 
     "rcedit": ["rcedit@4.0.1", "", { "dependencies": { "cross-spawn-windows-exe": "^1.1.0" } }, "sha512-bZdaQi34krFWhrDn+O53ccBDw0MkAT2Vhu75SqhtvhQu4OPyFM4RoVheyYiVQYdjhUi6EJMVWQ0tR6bCIYVkUg=="],
 

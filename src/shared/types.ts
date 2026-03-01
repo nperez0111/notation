@@ -113,6 +113,10 @@ export type DocumentRPC = {
 				params: { id: number };
 				response: { success: boolean };
 			};
+			reorderPropertyDefinitions: {
+				params: { orderedIds: number[] };
+				response: void;
+			};
 		};
 		messages: {};
 	}>;

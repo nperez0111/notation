@@ -29,9 +29,15 @@ db.exec(`
   CREATE TABLE IF NOT EXISTS property_definitions (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     label TEXT NOT NULL,
-    type TEXT NOT NULL CHECK (type IN ('string', 'number', 'date', 'time', 'checkbox'))
+    type TEXT NOT NULL CHECK (type IN ('string', 'number', 'date', 'time', 'checkbox')),
+    position INTEGER NOT NULL DEFAULT 0
   )
 `);
+try {
+	db.exec(`ALTER TABLE property_definitions ADD COLUMN position INTEGER NOT NULL DEFAULT 0`);
+} catch {
+	// Column already exists
+}
 
 // Collections: groups of documents
 db.exec(`
@@ -124,7 +130,7 @@ const deleteDocumentStmt = db.prepare("DELETE FROM documents WHERE id = ?");
 
 const propColumns = "id, label, type";
 const getAllProperties = db.prepare(
-	`SELECT ${propColumns} FROM property_definitions ORDER BY id`,
+	`SELECT ${propColumns} FROM property_definitions ORDER BY position ASC, id ASC`,
 );
 const getPropertyById = db.prepare(
 	`SELECT ${propColumns} FROM property_definitions WHERE id = ?`,
@@ -137,6 +143,9 @@ const updatePropertyStmt = db.prepare(
 );
 const deletePropertyStmt = db.prepare(
 	"DELETE FROM property_definitions WHERE id = ?",
+);
+const updatePropertyPosition = db.prepare(
+	"UPDATE property_definitions SET position = ? WHERE id = ?",
 );
 
 const documentRPC = BrowserView.defineRPC<DocumentRPC>({
@@ -240,6 +249,12 @@ const documentRPC = BrowserView.defineRPC<DocumentRPC>({
 			deletePropertyDefinition: ({ id }) => {
 				deletePropertyStmt.run(id);
 				return { success: true };
+			},
+			reorderPropertyDefinitions: ({ orderedIds }) => {
+				orderedIds.forEach((id, position) => {
+					updatePropertyPosition.run(position, id);
+				});
+				return undefined;
 			},
 		},
 		messages: {},

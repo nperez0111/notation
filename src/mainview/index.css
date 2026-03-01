@@ -87,3 +87,15 @@
 [data-baseweb] {
 	color-scheme: dark;
 }
+
+/* Menu items in portaled popovers: hover must work in shadow/portal context */
+.properties-menu-item:hover,
+.properties-submenu-item:hover {
+	background-color: var(--color-surface-hover) !important;
+}
+.properties-menu-item {
+	background-color: transparent;
+}
+.properties-submenu-item {
+	background-color: transparent;
+}

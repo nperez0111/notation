@@ -138,6 +138,16 @@ export default function App() {
 		},
 		[rpc],
 	);
+	const onReorderProperties = useCallback(
+		async (orderedIds: number[]) => {
+			await rpc.reorderPropertyDefinitions({ orderedIds });
+			setPropertyDefinitions((prev) => {
+				const byId = new Map(prev.map((p) => [p.id, p]));
+				return orderedIds.map((id) => byId.get(id)!).filter(Boolean);
+			});
+		},
+		[rpc],
+	);
 
 	return (
 		<div className="flex min-h-screen bg-[var(--color-bg)] text-[var(--color-text)]">
@@ -187,6 +197,7 @@ export default function App() {
 						onCreateProperty={onCreateProperty}
 						onUpdateProperty={onUpdateProperty}
 						onDeleteProperty={onDeleteProperty}
+						onReorderProperties={onReorderProperties}
 					/>
 				) : (
 					<div className="flex flex-1 items-center justify-center p-6 text-text-muted">

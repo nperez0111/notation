@@ -28,6 +28,7 @@ type DocumentEditorProps = {
 		type?: Property["type"],
 	) => Promise<void>;
 	onDeleteProperty: (id: number) => Promise<void>;
+	onReorderProperties: (orderedIds: number[]) => Promise<void>;
 };
 
 export function DocumentEditor({
@@ -39,6 +40,7 @@ export function DocumentEditor({
 	onCreateProperty,
 	onUpdateProperty,
 	onDeleteProperty,
+	onReorderProperties,
 }: DocumentEditorProps) {
 	const [title, setTitle] = useState(initialTitle);
 	const [propertyValues, setPropertyValues] =
@@ -105,6 +107,7 @@ export function DocumentEditor({
 				onCreateProperty={onCreateProperty}
 				onUpdateProperty={onUpdateProperty}
 				onDeleteProperty={onDeleteProperty}
+				onReorderProperties={onReorderProperties}
 			/>
 			<BlockNoteView
 				editor={editor}
