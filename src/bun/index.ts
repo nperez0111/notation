@@ -9,10 +9,15 @@ import type {
 	Document,
 	DocumentRPC,
 	Property,
+	SettingsInfo,
 } from "../shared/types";
 import Database from "bun:sqlite";
 import { join } from "path";
-import { existsSync, mkdirSync } from "fs";
+import { existsSync, mkdirSync, copyFileSync, readFileSync } from "fs";
+import { execSync } from "child_process";
+
+const SETTINGS_FILE = "settings.json";
+const DB_FILENAME = "documents.db";
 
 // Ensure data directory exists
 const dataDir = Utils.paths.userData;
@@ -20,12 +25,63 @@ if (!existsSync(dataDir)) {
 	mkdirSync(dataDir, { recursive: true });
 }
 
-// Initialize SQLite database
-const dbPath = join(dataDir, "documents.db");
-const db = new Database(dbPath, { create: true });
+function getSettingsPath(): string {
+	return join(dataDir, SETTINGS_FILE);
+}
 
-// Property definitions: shared label + type (values live in documents.properties as Record<id, string>)
-db.exec(`
+type SettingsJson = { dbDirectory?: string };
+
+function loadSettings(): SettingsJson {
+	const path = getSettingsPath();
+	if (!existsSync(path)) return {};
+	try {
+		const data = readFileSync(path, "utf-8");
+		return JSON.parse(data) as SettingsJson;
+	} catch {
+		return {};
+	}
+}
+
+function saveSettings(settings: SettingsJson): void {
+	Bun.write(getSettingsPath(), JSON.stringify(settings, null, 2));
+}
+
+const docColumns =
+	"id, title, created_at as createdAt, updated_at as updatedAt, created_by as createdBy, updated_by as updatedBy, content, properties, collection_id as collectionId, parent_id as parentId";
+const collColumns =
+	"id, name, created_at as createdAt, updated_at as updatedAt";
+const propColumns = "id, label, type";
+
+type DbState = {
+	db: Database.Database;
+	dbPath: string;
+	dbDirectory: string;
+	getAllCollections: ReturnType<Database.Database["prepare"]>;
+	getCollectionById: ReturnType<Database.Database["prepare"]>;
+	insertCollection: ReturnType<Database.Database["prepare"]>;
+	updateCollectionStmt: ReturnType<Database.Database["prepare"]>;
+	deleteCollectionStmt: ReturnType<Database.Database["prepare"]>;
+	getAllDocuments: ReturnType<Database.Database["prepare"]>;
+	getDocumentById: ReturnType<Database.Database["prepare"]>;
+	insertDocument: ReturnType<Database.Database["prepare"]>;
+	updateDocumentStmt: ReturnType<Database.Database["prepare"]>;
+	deleteDocumentStmt: ReturnType<Database.Database["prepare"]>;
+	getAllProperties: ReturnType<Database.Database["prepare"]>;
+	getPropertyById: ReturnType<Database.Database["prepare"]>;
+	insertProperty: ReturnType<Database.Database["prepare"]>;
+	updatePropertyStmt: ReturnType<Database.Database["prepare"]>;
+	deletePropertyStmt: ReturnType<Database.Database["prepare"]>;
+	updatePropertyPosition: ReturnType<Database.Database["prepare"]>;
+};
+
+function createDbState(dbDirectory: string): DbState {
+	if (!existsSync(dbDirectory)) {
+		mkdirSync(dbDirectory, { recursive: true });
+	}
+	const dbPath = join(dbDirectory, DB_FILENAME);
+	const db = new Database(dbPath, { create: true });
+
+	db.exec(`
   CREATE TABLE IF NOT EXISTS property_definitions (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     label TEXT NOT NULL,
@@ -33,14 +89,13 @@ db.exec(`
     position INTEGER NOT NULL DEFAULT 0
   )
 `);
-try {
-	db.exec(`ALTER TABLE property_definitions ADD COLUMN position INTEGER NOT NULL DEFAULT 0`);
-} catch {
-	// Column already exists
-}
+	try {
+		db.exec(`ALTER TABLE property_definitions ADD COLUMN position INTEGER NOT NULL DEFAULT 0`);
+	} catch {
+		// Column already exists
+	}
 
-// Collections: groups of documents
-db.exec(`
+	db.exec(`
   CREATE TABLE IF NOT EXISTS collections (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     name TEXT NOT NULL DEFAULT 'Unnamed',
@@ -49,8 +104,7 @@ db.exec(`
   )
 `);
 
-// Documents: properties column is JSON Record<propertyId, string>; collection_id and parent_id for grouping/nesting
-db.exec(`
+	db.exec(`
   CREATE TABLE IF NOT EXISTS documents (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     title TEXT NOT NULL DEFAULT '',
@@ -65,121 +119,130 @@ db.exec(`
   )
 `);
 
-// Migration: add collection_id and parent_id if table already existed without them
-const docInfo = db.query("PRAGMA table_info(documents)").all() as { name: string }[];
-const hasCollectionId = docInfo.some((c) => c.name === "collection_id");
-const hasParentId = docInfo.some((c) => c.name === "parent_id");
-if (!hasCollectionId) {
-	db.exec("ALTER TABLE documents ADD COLUMN collection_id INTEGER REFERENCES collections(id)");
-	let defaultCollId: number;
-	const existing = db.query("SELECT id FROM collections LIMIT 1").get() as { id: number } | undefined;
-	if (existing) {
-		defaultCollId = existing.id;
-	} else {
-		db.exec("INSERT INTO collections (name) VALUES ('Default')");
-		defaultCollId = (db.query("SELECT last_insert_rowid() as id").get() as { id: number }).id;
+	const docInfo = db.query("PRAGMA table_info(documents)").all() as { name: string }[];
+	const hasCollectionId = docInfo.some((c) => c.name === "collection_id");
+	const hasParentId = docInfo.some((c) => c.name === "parent_id");
+	if (!hasCollectionId) {
+		db.exec("ALTER TABLE documents ADD COLUMN collection_id INTEGER REFERENCES collections(id)");
+		let defaultCollId: number;
+		const existing = db.query("SELECT id FROM collections LIMIT 1").get() as { id: number } | undefined;
+		if (existing) {
+			defaultCollId = existing.id;
+		} else {
+			db.exec("INSERT INTO collections (name) VALUES ('Default')");
+			defaultCollId = (db.query("SELECT last_insert_rowid() as id").get() as { id: number }).id;
+		}
+		db.prepare(
+			"UPDATE documents SET collection_id = ? WHERE collection_id IS NULL",
+		).run(defaultCollId);
 	}
-	const updateCollId = db.prepare(
-		"UPDATE documents SET collection_id = ? WHERE collection_id IS NULL",
-	);
-	updateCollId.run(defaultCollId);
+	if (!hasParentId) {
+		db.exec("ALTER TABLE documents ADD COLUMN parent_id INTEGER REFERENCES documents(id)");
+	}
+
+	if (!(db.query("SELECT id FROM collections LIMIT 1").get() as unknown)) {
+		db.exec("INSERT INTO collections (name) VALUES ('Default')");
+	}
+
+	return {
+		db,
+		dbPath,
+		dbDirectory,
+		getAllCollections: db.prepare(
+			`SELECT ${collColumns} FROM collections ORDER BY name`,
+		),
+		getCollectionById: db.prepare(
+			`SELECT ${collColumns} FROM collections WHERE id = ?`,
+		),
+		insertCollection: db.prepare(
+			`INSERT INTO collections (name) VALUES (?) RETURNING ${collColumns}`,
+		),
+		updateCollectionStmt: db.prepare(
+			`UPDATE collections SET name = ?, updated_at = datetime('now') WHERE id = ? RETURNING ${collColumns}`,
+		),
+		deleteCollectionStmt: db.prepare("DELETE FROM collections WHERE id = ?"),
+		getAllDocuments: db.prepare(
+			`SELECT ${docColumns} FROM documents ORDER BY collection_id, updated_at DESC`,
+		),
+		getDocumentById: db.prepare(
+			`SELECT ${docColumns} FROM documents WHERE id = ?`,
+		),
+		insertDocument: db.prepare(
+			`INSERT INTO documents (title, content, created_by, updated_by, properties, collection_id, parent_id) VALUES (?, ?, ?, ?, ?, ?, ?) RETURNING ${docColumns}`,
+		),
+		updateDocumentStmt: db.prepare(
+			`UPDATE documents SET title = COALESCE(?, title), content = COALESCE(?, content), updated_by = ?, updated_at = datetime('now'), properties = COALESCE(?, properties), collection_id = COALESCE(?, collection_id), parent_id = ? WHERE id = ? RETURNING ${docColumns}`,
+		),
+		deleteDocumentStmt: db.prepare("DELETE FROM documents WHERE id = ?"),
+		getAllProperties: db.prepare(
+			`SELECT ${propColumns} FROM property_definitions ORDER BY position ASC, id ASC`,
+		),
+		getPropertyById: db.prepare(
+			`SELECT ${propColumns} FROM property_definitions WHERE id = ?`,
+		),
+		insertProperty: db.prepare(
+			`INSERT INTO property_definitions (label, type) VALUES (?, ?) RETURNING ${propColumns}`,
+		),
+		updatePropertyStmt: db.prepare(
+			`UPDATE property_definitions SET label = COALESCE(?, label), type = COALESCE(?, type) WHERE id = ? RETURNING ${propColumns}`,
+		),
+		deletePropertyStmt: db.prepare(
+			"DELETE FROM property_definitions WHERE id = ?",
+		),
+		updatePropertyPosition: db.prepare(
+			"UPDATE property_definitions SET position = ? WHERE id = ?",
+		),
+	};
 }
-if (!hasParentId) {
-	db.exec("ALTER TABLE documents ADD COLUMN parent_id INTEGER REFERENCES documents(id)");
+
+const initialSettings = loadSettings();
+const initialDbDirectory = initialSettings.dbDirectory ?? dataDir;
+let dbState = createDbState(initialDbDirectory);
+
+function reloadDatabase(): boolean {
+	try {
+		dbState.db.close(false);
+	} catch {
+		// ignore if already closed
+	}
+	const settings = loadSettings();
+	const nextDir = settings.dbDirectory ?? dataDir;
+	dbState = createDbState(nextDir);
+	return true;
 }
-
-// Ensure at least one collection exists (new DB or after migration)
-if (!(db.query("SELECT id FROM collections LIMIT 1").get() as unknown)) {
-	db.exec("INSERT INTO collections (name) VALUES ('Default')");
-}
-
-const docColumns =
-	"id, title, created_at as createdAt, updated_at as updatedAt, created_by as createdBy, updated_by as updatedBy, content, properties, collection_id as collectionId, parent_id as parentId";
-
-// Collection statements
-const collColumns =
-	"id, name, created_at as createdAt, updated_at as updatedAt";
-const getAllCollections = db.prepare(
-	`SELECT ${collColumns} FROM collections ORDER BY name`,
-);
-const getCollectionById = db.prepare(
-	`SELECT ${collColumns} FROM collections WHERE id = ?`,
-);
-const insertCollection = db.prepare(
-	`INSERT INTO collections (name) VALUES (?) RETURNING ${collColumns}`,
-);
-const updateCollectionStmt = db.prepare(
-	`UPDATE collections SET name = ?, updated_at = datetime('now') WHERE id = ? RETURNING ${collColumns}`,
-);
-const deleteCollectionStmt = db.prepare("DELETE FROM collections WHERE id = ?");
-
-// Prepared statements (documents)
-const getAllDocuments = db.prepare(
-	`SELECT ${docColumns} FROM documents ORDER BY collection_id, updated_at DESC`,
-);
-const getDocumentById = db.prepare(
-	`SELECT ${docColumns} FROM documents WHERE id = ?`,
-);
-const insertDocument = db.prepare(
-	`INSERT INTO documents (title, content, created_by, updated_by, properties, collection_id, parent_id) VALUES (?, ?, ?, ?, ?, ?, ?) RETURNING ${docColumns}`,
-);
-const updateDocumentStmt = db.prepare(
-	`UPDATE documents SET title = COALESCE(?, title), content = COALESCE(?, content), updated_by = ?, updated_at = datetime('now'), properties = COALESCE(?, properties), collection_id = COALESCE(?, collection_id), parent_id = ? WHERE id = ? RETURNING ${docColumns}`,
-);
-const deleteDocumentStmt = db.prepare("DELETE FROM documents WHERE id = ?");
-
-const propColumns = "id, label, type";
-const getAllProperties = db.prepare(
-	`SELECT ${propColumns} FROM property_definitions ORDER BY position ASC, id ASC`,
-);
-const getPropertyById = db.prepare(
-	`SELECT ${propColumns} FROM property_definitions WHERE id = ?`,
-);
-const insertProperty = db.prepare(
-	`INSERT INTO property_definitions (label, type) VALUES (?, ?) RETURNING ${propColumns}`,
-);
-const updatePropertyStmt = db.prepare(
-	`UPDATE property_definitions SET label = COALESCE(?, label), type = COALESCE(?, type) WHERE id = ? RETURNING ${propColumns}`,
-);
-const deletePropertyStmt = db.prepare(
-	"DELETE FROM property_definitions WHERE id = ?",
-);
-const updatePropertyPosition = db.prepare(
-	"UPDATE property_definitions SET position = ? WHERE id = ?",
-);
 
 const documentRPC = BrowserView.defineRPC<DocumentRPC>({
 	maxRequestTime: 5000,
 	handlers: {
 		requests: {
-			getCollections: () => getAllCollections.all() as Collection[],
+			getCollections: () => dbState.getAllCollections.all() as Collection[],
 			getCollection: ({ id }) =>
-				(getCollectionById.get(id) as Collection) ?? null,
+				(dbState.getCollectionById.get(id) as Collection) ?? null,
 			createCollection: ({ name }) =>
-				insertCollection.get(name) as Collection,
+				dbState.insertCollection.get(name) as Collection,
 			updateCollection: ({ id, name }) => {
-				const updated = updateCollectionStmt.get(name, id) as
+				const updated = dbState.updateCollectionStmt.get(name, id) as
 					| Collection
 					| undefined;
 				return updated ?? null;
 			},
 			deleteCollection: ({ id }) => {
-				const other = db
+				const other = dbState.db
 					.prepare("SELECT id FROM collections WHERE id != ? LIMIT 1")
 					.get(id) as { id: number } | undefined;
 				if (other) {
-					db.prepare("UPDATE documents SET collection_id = ? WHERE collection_id = ?").run(
+					dbState.db.prepare("UPDATE documents SET collection_id = ? WHERE collection_id = ?").run(
 						other.id,
 						id,
 					);
 				} else {
-					db.prepare("DELETE FROM documents WHERE collection_id = ?").run(id);
+					dbState.db.prepare("DELETE FROM documents WHERE collection_id = ?").run(id);
 				}
-				deleteCollectionStmt.run(id);
+				dbState.deleteCollectionStmt.run(id);
 				return { success: true };
 			},
-			getDocuments: () => getAllDocuments.all() as Document[],
-			getDocument: ({ id }) => (getDocumentById.get(id) as Document) ?? null,
+			getDocuments: () => dbState.getAllDocuments.all() as Document[],
+			getDocument: ({ id }) => (dbState.getDocumentById.get(id) as Document) ?? null,
 			createDocument: ({
 				title,
 				content,
@@ -190,7 +253,7 @@ const documentRPC = BrowserView.defineRPC<DocumentRPC>({
 				parentId,
 			}) => {
 				const props = properties ?? "{}";
-				return insertDocument.get(
+				return dbState.insertDocument.get(
 					title,
 					content,
 					createdBy,
@@ -209,7 +272,7 @@ const documentRPC = BrowserView.defineRPC<DocumentRPC>({
 				collectionId,
 				parentId,
 			}) => {
-				const row = getDocumentById.get(id) as Document | undefined;
+				const row = dbState.getDocumentById.get(id) as Document | undefined;
 				if (!row) return null;
 				const newTitle = title ?? row.title;
 				const newContent = content ?? row.content;
@@ -217,7 +280,7 @@ const documentRPC = BrowserView.defineRPC<DocumentRPC>({
 				const newCollectionId = collectionId ?? row.collectionId;
 				const newParentId =
 					parentId !== undefined ? parentId : row.parentId;
-				const updated = updateDocumentStmt.get(
+				const updated = dbState.updateDocumentStmt.get(
 					newTitle,
 					newContent,
 					updatedBy,
@@ -229,17 +292,17 @@ const documentRPC = BrowserView.defineRPC<DocumentRPC>({
 				return updated ?? null;
 			},
 			deleteDocument: ({ id }) => {
-				db.prepare("UPDATE documents SET parent_id = NULL WHERE parent_id = ?").run(id);
-				deleteDocumentStmt.run(id);
+				dbState.db.prepare("UPDATE documents SET parent_id = NULL WHERE parent_id = ?").run(id);
+				dbState.deleteDocumentStmt.run(id);
 				return { success: true };
 			},
-			getPropertyDefinitions: () => getAllProperties.all() as Property[],
+			getPropertyDefinitions: () => dbState.getAllProperties.all() as Property[],
 			createPropertyDefinition: ({ label, type }) =>
-				insertProperty.get(label, type) as Property,
+				dbState.insertProperty.get(label, type) as Property,
 			updatePropertyDefinition: ({ id, label, type }) => {
-				const row = getPropertyById.get(id) as Property | undefined;
+				const row = dbState.getPropertyById.get(id) as Property | undefined;
 				if (!row) return null;
-				const updated = updatePropertyStmt.get(
+				const updated = dbState.updatePropertyStmt.get(
 					label ?? row.label,
 					type ?? row.type,
 					id,
@@ -247,15 +310,52 @@ const documentRPC = BrowserView.defineRPC<DocumentRPC>({
 				return updated ?? null;
 			},
 			deletePropertyDefinition: ({ id }) => {
-				deletePropertyStmt.run(id);
+				dbState.deletePropertyStmt.run(id);
 				return { success: true };
 			},
 			reorderPropertyDefinitions: ({ orderedIds }) => {
 				orderedIds.forEach((id, position) => {
-					updatePropertyPosition.run(position, id);
+					dbState.updatePropertyPosition.run(position, id);
 				});
 				return undefined;
 			},
+			getSettings: (): SettingsInfo => {
+				const count = (dbState.db.query("SELECT COUNT(*) as c FROM documents").get() as { c: number }).c;
+				return {
+					dbPath: dbState.dbPath,
+					dbDirectory: dbState.dbDirectory,
+					documentCount: count,
+				};
+			},
+			chooseDatabaseDirectory: (): string | null => {
+				try {
+					const result = execSync(
+						"osascript -e 'return POSIX path of (choose folder with prompt \"Choose folder for database\")'",
+						{ encoding: "utf-8" },
+					);
+					return result.trim() || null;
+				} catch {
+					return null;
+				}
+			},
+			setDatabaseLocation: ({
+				directory,
+				mode,
+			}: {
+				directory: string;
+				mode: "new" | "move";
+			}) => {
+				if (!existsSync(directory)) {
+					mkdirSync(directory, { recursive: true });
+				}
+				const newDbPath = join(directory, DB_FILENAME);
+				if (mode === "move" && existsSync(dbState.dbPath)) {
+					copyFileSync(dbState.dbPath, newDbPath);
+				}
+				saveSettings({ dbDirectory: directory });
+				return { success: true };
+			},
+			reloadDatabase: () => ({ success: reloadDatabase() }),
 		},
 		messages: {},
 	},
@@ -295,4 +395,4 @@ const mainWindow = new BrowserWindow({
 });
 
 console.log("Note Taker started!");
-console.log(`Database: ${dbPath}`);
+console.log(`Database: ${dbState.dbPath}`);

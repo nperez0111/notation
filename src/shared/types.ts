@@ -56,6 +56,13 @@ export type Document = {
 	parentId: number | null;
 };
 
+/** Settings info returned to the UI (database path and document count for prompts). */
+export type SettingsInfo = {
+	dbPath: string;
+	dbDirectory: string;
+	documentCount: number;
+};
+
 /**
  * RPC schema for document CRUD between the mainview and the Bun process.
  */
@@ -117,6 +124,13 @@ export type DocumentRPC = {
 				params: { orderedIds: number[] };
 				response: void;
 			};
+			getSettings: { params: {}; response: SettingsInfo };
+			chooseDatabaseDirectory: { params: {}; response: string | null };
+			setDatabaseLocation: {
+				params: { directory: string; mode: "new" | "move" };
+				response: { success: boolean };
+			};
+			reloadDatabase: { params: {}; response: { success: boolean } };
 		};
 		messages: {};
 	}>;

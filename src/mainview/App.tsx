@@ -1,8 +1,10 @@
 import { useCallback, useEffect, useState } from "react";
 import { useRpc } from "./electroview";
+import { useTheme } from "./themeContext";
 import type { Collection, Document, Property } from "../shared/types";
 import { DocumentSidebar } from "./components/documents/DocumentSidebar";
 import { DocumentEditor } from "./components/editor/DocumentEditor";
+import { SettingsModal } from "./components/settings/SettingsModal";
 import { parseDocumentContent } from "./lib/parseContent";
 import { parseDocumentProperties } from "./lib/propertyValues";
 
@@ -10,22 +12,24 @@ const DEFAULT_USER = "user";
 
 export default function App() {
 	const rpc = useRpc();
+	const { theme, setTheme, resolved: resolvedTheme } = useTheme();
 	const [collections, setCollections] = useState<Collection[]>([]);
 	const [documents, setDocuments] = useState<Document[]>([]);
 	const [propertyDefinitions, setPropertyDefinitions] = useState<Property[]>([]);
 	const [selectedId, setSelectedId] = useState<number | null>(null);
 	const [currentDoc, setCurrentDoc] = useState<Document | null>(null);
 	const [loading, setLoading] = useState(true);
+	const [settingsOpen, setSettingsOpen] = useState(false);
 
-	// Bootstrap: collections, document list, property definitions, and initial selection.
-	useEffect(() => {
-		let cancelled = false;
+	const refetchFromDatabase = useCallback(() => {
+		setLoading(true);
+		setSelectedId(null);
+		setCurrentDoc(null);
 		Promise.all([
 			rpc.getCollections({}),
 			rpc.getDocuments({}),
 			rpc.getPropertyDefinitions({}),
 		]).then(([colls, list, defs]) => {
-			if (cancelled) return;
 			setCollections(colls);
 			setDocuments(list);
 			setPropertyDefinitions(defs);
@@ -33,15 +37,15 @@ export default function App() {
 			if (list.length > 0) {
 				const firstId = list[0].id;
 				setSelectedId(firstId);
-				rpc.getDocument({ id: firstId }).then((doc) => {
-					if (!cancelled) setCurrentDoc(doc ?? null);
-				});
+				rpc.getDocument({ id: firstId }).then((doc) => setCurrentDoc(doc ?? null));
 			}
 		});
-		return () => {
-			cancelled = true;
-		};
 	}, [rpc]);
+
+	// Bootstrap: collections, document list, property definitions, and initial selection.
+	useEffect(() => {
+		refetchFromDatabase();
+	}, [refetchFromDatabase]);
 
 	// When user selects a document, load it (no useEffect: run in the callback).
 	const onSelectDocument = useCallback(
@@ -159,6 +163,14 @@ export default function App() {
 				onCreateDocument={onCreateDocument}
 				onCreateCollection={onCreateCollection}
 				onRenameCollection={onRenameCollection}
+				onOpenSettings={() => setSettingsOpen(true)}
+			/>
+			<SettingsModal
+				isOpen={settingsOpen}
+				onClose={() => setSettingsOpen(false)}
+				theme={theme}
+				onThemeChange={setTheme}
+				onDatabaseReload={refetchFromDatabase}
 			/>
 			<main className="flex min-w-0 flex-1 flex-col">
 				{loading ? (
@@ -193,6 +205,7 @@ export default function App() {
 							currentDoc.properties ?? "{}",
 						)}
 						propertyDefinitions={propertyDefinitions}
+						theme={resolvedTheme}
 						onSave={onSaveDocument}
 						onCreateProperty={onCreateProperty}
 						onUpdateProperty={onUpdateProperty}

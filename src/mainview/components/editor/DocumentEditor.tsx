@@ -16,6 +16,7 @@ type DocumentEditorProps = {
 	initialTitle: string;
 	initialPropertyValues: DocumentPropertyValues;
 	propertyDefinitions: Property[];
+	theme?: "light" | "dark";
 	onSave: (payload: {
 		content: string;
 		title?: string;
@@ -36,6 +37,7 @@ export function DocumentEditor({
 	initialTitle,
 	initialPropertyValues,
 	propertyDefinitions,
+	theme = "dark",
 	onSave,
 	onCreateProperty,
 	onUpdateProperty,
@@ -111,7 +113,7 @@ export function DocumentEditor({
 			/>
 			<BlockNoteView
 				editor={editor}
-				theme="dark"
+				theme={theme}
 				className="flex-1 min-h-0"
 				onChange={scheduleSave}
 			/>
