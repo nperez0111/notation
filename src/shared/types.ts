@@ -28,10 +28,20 @@ export type Property = {
 /** Document property values: map of property id → string value (parsed by property type). */
 export type DocumentPropertyValues = Record<number, string>;
 
+/** A collection that groups documents. */
+export type Collection = {
+	id: number;
+	name: string;
+	createdAt: string;
+	updatedAt: string;
+};
+
 /**
  * A document stored in the database: id, title, metadata, content, and property values.
  * - content: BlockNote JSON (stringified Block[]).
  * - properties: JSON string of DocumentPropertyValues (Record<propertyId, string>).
+ * - collectionId: which collection this document belongs to.
+ * - parentId: optional parent document for nesting; null means top-level in the collection.
  */
 export type Document = {
 	id: number;
@@ -42,6 +52,8 @@ export type Document = {
 	updatedBy: string;
 	content: string;
 	properties: string; // JSON: Record<Property['id'], string>
+	collectionId: number;
+	parentId: number | null;
 };
 
 /**
@@ -50,6 +62,17 @@ export type Document = {
 export type DocumentRPC = {
 	bun: RPCSchema<{
 		requests: {
+			getCollections: { params: {}; response: Collection[] };
+			getCollection: { params: { id: number }; response: Collection | null };
+			createCollection: {
+				params: { name: string };
+				response: Collection;
+			};
+			updateCollection: {
+				params: { id: number; name: string };
+				response: Collection | null;
+			};
+			deleteCollection: { params: { id: number }; response: { success: boolean } };
 			getDocuments: { params: {}; response: Document[] };
 			getDocument: { params: { id: number }; response: Document | null };
 			createDocument: {
@@ -59,6 +82,8 @@ export type DocumentRPC = {
 					createdBy: string;
 					updatedBy: string;
 					properties?: string;
+					collectionId: number;
+					parentId?: number | null;
 				};
 				response: Document;
 			};
@@ -69,6 +94,8 @@ export type DocumentRPC = {
 					content?: string;
 					updatedBy: string;
 					properties?: string;
+					collectionId?: number;
+					parentId?: number | null;
 				};
 				response: Document | null;
 			};

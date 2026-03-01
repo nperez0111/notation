@@ -4,7 +4,12 @@ import {
 	Updater,
 	Utils,
 } from "electrobun/bun";
-import type { Document, DocumentRPC, Property } from "../shared/types";
+import type {
+	Collection,
+	Document,
+	DocumentRPC,
+	Property,
+} from "../shared/types";
 import Database from "bun:sqlite";
 import { join } from "path";
 import { existsSync, mkdirSync } from "fs";
@@ -28,7 +33,17 @@ db.exec(`
   )
 `);
 
-// Documents: properties column is JSON Record<propertyId, string>
+// Collections: groups of documents
+db.exec(`
+  CREATE TABLE IF NOT EXISTS collections (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL DEFAULT 'Unnamed',
+    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+  )
+`);
+
+// Documents: properties column is JSON Record<propertyId, string>; collection_id and parent_id for grouping/nesting
 db.exec(`
   CREATE TABLE IF NOT EXISTS documents (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -38,25 +53,72 @@ db.exec(`
     created_by TEXT NOT NULL DEFAULT '',
     updated_by TEXT NOT NULL DEFAULT '',
     content TEXT NOT NULL DEFAULT '[]',
-    properties TEXT NOT NULL DEFAULT '{}'
+    properties TEXT NOT NULL DEFAULT '{}',
+    collection_id INTEGER NOT NULL REFERENCES collections(id),
+    parent_id INTEGER REFERENCES documents(id)
   )
 `);
 
-const docColumns =
-	"id, title, created_at as createdAt, updated_at as updatedAt, created_by as createdBy, updated_by as updatedBy, content, properties";
+// Migration: add collection_id and parent_id if table already existed without them
+const docInfo = db.query("PRAGMA table_info(documents)").all() as { name: string }[];
+const hasCollectionId = docInfo.some((c) => c.name === "collection_id");
+const hasParentId = docInfo.some((c) => c.name === "parent_id");
+if (!hasCollectionId) {
+	db.exec("ALTER TABLE documents ADD COLUMN collection_id INTEGER REFERENCES collections(id)");
+	let defaultCollId: number;
+	const existing = db.query("SELECT id FROM collections LIMIT 1").get() as { id: number } | undefined;
+	if (existing) {
+		defaultCollId = existing.id;
+	} else {
+		db.exec("INSERT INTO collections (name) VALUES ('Default')");
+		defaultCollId = (db.query("SELECT last_insert_rowid() as id").get() as { id: number }).id;
+	}
+	const updateCollId = db.prepare(
+		"UPDATE documents SET collection_id = ? WHERE collection_id IS NULL",
+	);
+	updateCollId.run(defaultCollId);
+}
+if (!hasParentId) {
+	db.exec("ALTER TABLE documents ADD COLUMN parent_id INTEGER REFERENCES documents(id)");
+}
 
-// Prepared statements
+// Ensure at least one collection exists (new DB or after migration)
+if (!(db.query("SELECT id FROM collections LIMIT 1").get() as unknown)) {
+	db.exec("INSERT INTO collections (name) VALUES ('Default')");
+}
+
+const docColumns =
+	"id, title, created_at as createdAt, updated_at as updatedAt, created_by as createdBy, updated_by as updatedBy, content, properties, collection_id as collectionId, parent_id as parentId";
+
+// Collection statements
+const collColumns =
+	"id, name, created_at as createdAt, updated_at as updatedAt";
+const getAllCollections = db.prepare(
+	`SELECT ${collColumns} FROM collections ORDER BY name`,
+);
+const getCollectionById = db.prepare(
+	`SELECT ${collColumns} FROM collections WHERE id = ?`,
+);
+const insertCollection = db.prepare(
+	`INSERT INTO collections (name) VALUES (?) RETURNING ${collColumns}`,
+);
+const updateCollectionStmt = db.prepare(
+	`UPDATE collections SET name = ?, updated_at = datetime('now') WHERE id = ? RETURNING ${collColumns}`,
+);
+const deleteCollectionStmt = db.prepare("DELETE FROM collections WHERE id = ?");
+
+// Prepared statements (documents)
 const getAllDocuments = db.prepare(
-	`SELECT ${docColumns} FROM documents ORDER BY updated_at DESC`,
+	`SELECT ${docColumns} FROM documents ORDER BY collection_id, updated_at DESC`,
 );
 const getDocumentById = db.prepare(
 	`SELECT ${docColumns} FROM documents WHERE id = ?`,
 );
 const insertDocument = db.prepare(
-	`INSERT INTO documents (title, content, created_by, updated_by, properties) VALUES (?, ?, ?, ?, ?) RETURNING ${docColumns}`,
+	`INSERT INTO documents (title, content, created_by, updated_by, properties, collection_id, parent_id) VALUES (?, ?, ?, ?, ?, ?, ?) RETURNING ${docColumns}`,
 );
 const updateDocumentStmt = db.prepare(
-	`UPDATE documents SET title = ?, content = ?, updated_by = ?, updated_at = datetime('now'), properties = ? WHERE id = ? RETURNING ${docColumns}`,
+	`UPDATE documents SET title = COALESCE(?, title), content = COALESCE(?, content), updated_by = ?, updated_at = datetime('now'), properties = COALESCE(?, properties), collection_id = COALESCE(?, collection_id), parent_id = ? WHERE id = ? RETURNING ${docColumns}`,
 );
 const deleteDocumentStmt = db.prepare("DELETE FROM documents WHERE id = ?");
 
@@ -81,9 +143,43 @@ const documentRPC = BrowserView.defineRPC<DocumentRPC>({
 	maxRequestTime: 5000,
 	handlers: {
 		requests: {
+			getCollections: () => getAllCollections.all() as Collection[],
+			getCollection: ({ id }) =>
+				(getCollectionById.get(id) as Collection) ?? null,
+			createCollection: ({ name }) =>
+				insertCollection.get(name) as Collection,
+			updateCollection: ({ id, name }) => {
+				const updated = updateCollectionStmt.get(name, id) as
+					| Collection
+					| undefined;
+				return updated ?? null;
+			},
+			deleteCollection: ({ id }) => {
+				const other = db
+					.prepare("SELECT id FROM collections WHERE id != ? LIMIT 1")
+					.get(id) as { id: number } | undefined;
+				if (other) {
+					db.prepare("UPDATE documents SET collection_id = ? WHERE collection_id = ?").run(
+						other.id,
+						id,
+					);
+				} else {
+					db.prepare("DELETE FROM documents WHERE collection_id = ?").run(id);
+				}
+				deleteCollectionStmt.run(id);
+				return { success: true };
+			},
 			getDocuments: () => getAllDocuments.all() as Document[],
 			getDocument: ({ id }) => (getDocumentById.get(id) as Document) ?? null,
-			createDocument: ({ title, content, createdBy, updatedBy, properties }) => {
+			createDocument: ({
+				title,
+				content,
+				createdBy,
+				updatedBy,
+				properties,
+				collectionId,
+				parentId,
+			}) => {
 				const props = properties ?? "{}";
 				return insertDocument.get(
 					title,
@@ -91,24 +187,40 @@ const documentRPC = BrowserView.defineRPC<DocumentRPC>({
 					createdBy,
 					updatedBy,
 					props,
+					collectionId,
+					parentId ?? null,
 				) as Document;
 			},
-			updateDocument: ({ id, title, content, updatedBy, properties }) => {
+			updateDocument: ({
+				id,
+				title,
+				content,
+				updatedBy,
+				properties,
+				collectionId,
+				parentId,
+			}) => {
 				const row = getDocumentById.get(id) as Document | undefined;
 				if (!row) return null;
 				const newTitle = title ?? row.title;
 				const newContent = content ?? row.content;
 				const newProps = properties ?? row.properties;
+				const newCollectionId = collectionId ?? row.collectionId;
+				const newParentId =
+					parentId !== undefined ? parentId : row.parentId;
 				const updated = updateDocumentStmt.get(
 					newTitle,
 					newContent,
 					updatedBy,
 					newProps,
+					newCollectionId,
+					newParentId,
 					id,
 				) as Document | undefined;
 				return updated ?? null;
 			},
 			deleteDocument: ({ id }) => {
+				db.prepare("UPDATE documents SET parent_id = NULL WHERE parent_id = ?").run(id);
 				deleteDocumentStmt.run(id);
 				return { success: true };
 			},

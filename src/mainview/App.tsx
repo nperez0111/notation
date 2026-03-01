@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { useRpc } from "./electroview";
-import type { Document, Property } from "../shared/types";
+import type { Collection, Document, Property } from "../shared/types";
 import { DocumentSidebar } from "./components/documents/DocumentSidebar";
 import { DocumentEditor } from "./components/editor/DocumentEditor";
 import { parseDocumentContent } from "./lib/parseContent";
@@ -10,30 +10,34 @@ const DEFAULT_USER = "user";
 
 export default function App() {
 	const rpc = useRpc();
+	const [collections, setCollections] = useState<Collection[]>([]);
 	const [documents, setDocuments] = useState<Document[]>([]);
 	const [propertyDefinitions, setPropertyDefinitions] = useState<Property[]>([]);
 	const [selectedId, setSelectedId] = useState<number | null>(null);
 	const [currentDoc, setCurrentDoc] = useState<Document | null>(null);
 	const [loading, setLoading] = useState(true);
 
-	// Bootstrap: document list, property definitions, and initial selection.
+	// Bootstrap: collections, document list, property definitions, and initial selection.
 	useEffect(() => {
 		let cancelled = false;
-		Promise.all([rpc.getDocuments({}), rpc.getPropertyDefinitions({})]).then(
-			([list, defs]) => {
-				if (cancelled) return;
-				setDocuments(list);
-				setPropertyDefinitions(defs);
-				setLoading(false);
-				if (list.length > 0) {
-					const firstId = list[0].id;
-					setSelectedId(firstId);
-					rpc.getDocument({ id: firstId }).then((doc) => {
-						if (!cancelled) setCurrentDoc(doc ?? null);
-					});
-				}
-			},
-		);
+		Promise.all([
+			rpc.getCollections({}),
+			rpc.getDocuments({}),
+			rpc.getPropertyDefinitions({}),
+		]).then(([colls, list, defs]) => {
+			if (cancelled) return;
+			setCollections(colls);
+			setDocuments(list);
+			setPropertyDefinitions(defs);
+			setLoading(false);
+			if (list.length > 0) {
+				const firstId = list[0].id;
+				setSelectedId(firstId);
+				rpc.getDocument({ id: firstId }).then((doc) => {
+					if (!cancelled) setCurrentDoc(doc ?? null);
+				});
+			}
+		});
 		return () => {
 			cancelled = true;
 		};
@@ -49,17 +53,38 @@ export default function App() {
 		[rpc],
 	);
 
-	const onCreateDocument = useCallback(async () => {
-		const doc = await rpc.createDocument({
-			title: "",
-			content: "[]",
-			createdBy: DEFAULT_USER,
-			updatedBy: DEFAULT_USER,
-			properties: "{}",
-		});
-		setDocuments((prev) => [doc, ...prev]);
-		onSelectDocument(doc.id);
-	}, [rpc, onSelectDocument]);
+	const onCreateDocument = useCallback(
+		async (collectionId: number, parentId?: number | null) => {
+			const doc = await rpc.createDocument({
+				title: "",
+				content: "[]",
+				createdBy: DEFAULT_USER,
+				updatedBy: DEFAULT_USER,
+				properties: "{}",
+				collectionId,
+				parentId: parentId ?? null,
+			});
+			setDocuments((prev) => [doc, ...prev]);
+			onSelectDocument(doc.id);
+		},
+		[rpc, onSelectDocument],
+	);
+
+	const onCreateCollection = useCallback(async () => {
+		const coll = await rpc.createCollection({ name: "New collection" });
+		setCollections((prev) => [...prev, coll]);
+	}, [rpc]);
+
+	const onRenameCollection = useCallback(
+		async (id: number, name: string) => {
+			const updated = await rpc.updateCollection({ id, name });
+			if (!updated) return;
+			setCollections((prev) =>
+				prev.map((c) => (c.id === id ? updated : c)),
+			);
+		},
+		[rpc],
+	);
 
 	const onSaveDocument = useCallback(
 		async (payload: {
@@ -117,10 +142,13 @@ export default function App() {
 	return (
 		<div className="flex min-h-screen bg-[var(--color-bg)] text-[var(--color-text)]">
 			<DocumentSidebar
+				collections={collections}
 				documents={documents}
 				selectedId={selectedId}
 				onSelectDocument={onSelectDocument}
 				onCreateDocument={onCreateDocument}
+				onCreateCollection={onCreateCollection}
+				onRenameCollection={onRenameCollection}
 			/>
 			<main className="flex min-w-0 flex-1 flex-col">
 				{loading ? (
@@ -132,8 +160,12 @@ export default function App() {
 						<p>No notes yet.</p>
 						<button
 							type="button"
-							onClick={onCreateDocument}
+							onClick={() =>
+								collections[0] &&
+								onCreateDocument(collections[0].id, null)
+							}
 							className="text-accent hover:underline"
+							disabled={collections.length === 0}
 						>
 							Create your first note
 						</button>
