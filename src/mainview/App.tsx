@@ -1,34 +1,39 @@
 import { useCallback, useEffect, useState } from "react";
 import { useRpc } from "./electroview";
-import type { Document } from "../shared/types";
+import type { Document, Property } from "../shared/types";
 import { DocumentSidebar } from "./components/documents/DocumentSidebar";
 import { DocumentEditor } from "./components/editor/DocumentEditor";
 import { parseDocumentContent } from "./lib/parseContent";
+import { parseDocumentProperties } from "./lib/propertyValues";
 
 const DEFAULT_USER = "user";
 
 export default function App() {
 	const rpc = useRpc();
 	const [documents, setDocuments] = useState<Document[]>([]);
+	const [propertyDefinitions, setPropertyDefinitions] = useState<Property[]>([]);
 	const [selectedId, setSelectedId] = useState<number | null>(null);
 	const [currentDoc, setCurrentDoc] = useState<Document | null>(null);
 	const [loading, setLoading] = useState(true);
 
-	// Single data-loading effect: bootstrap document list and initial selection.
+	// Bootstrap: document list, property definitions, and initial selection.
 	useEffect(() => {
 		let cancelled = false;
-		rpc.getDocuments({}).then((list) => {
-			if (cancelled) return;
-			setDocuments(list);
-			setLoading(false);
-			if (list.length > 0) {
-				const firstId = list[0].id;
-				setSelectedId(firstId);
-				rpc.getDocument({ id: firstId }).then((doc) => {
-					if (!cancelled) setCurrentDoc(doc ?? null);
-				});
-			}
-		});
+		Promise.all([rpc.getDocuments({}), rpc.getPropertyDefinitions({})]).then(
+			([list, defs]) => {
+				if (cancelled) return;
+				setDocuments(list);
+				setPropertyDefinitions(defs);
+				setLoading(false);
+				if (list.length > 0) {
+					const firstId = list[0].id;
+					setSelectedId(firstId);
+					rpc.getDocument({ id: firstId }).then((doc) => {
+						if (!cancelled) setCurrentDoc(doc ?? null);
+					});
+				}
+			},
+		);
 		return () => {
 			cancelled = true;
 		};
@@ -84,6 +89,31 @@ export default function App() {
 		[currentDoc, rpc],
 	);
 
+	const onCreateProperty = useCallback(
+		async (label: string, type: Property["type"]) => {
+			const created = await rpc.createPropertyDefinition({ label, type });
+			setPropertyDefinitions((prev) => [...prev, created]);
+		},
+		[rpc],
+	);
+	const onUpdateProperty = useCallback(
+		async (id: number, label?: string, type?: Property["type"]) => {
+			const updated = await rpc.updatePropertyDefinition({ id, label, type });
+			if (!updated) return;
+			setPropertyDefinitions((prev) =>
+				prev.map((p) => (p.id === id ? updated : p)),
+			);
+		},
+		[rpc],
+	);
+	const onDeleteProperty = useCallback(
+		async (id: number) => {
+			await rpc.deletePropertyDefinition({ id });
+			setPropertyDefinitions((prev) => prev.filter((p) => p.id !== id));
+		},
+		[rpc],
+	);
+
 	return (
 		<div className="flex min-h-screen bg-[var(--color-bg)] text-[var(--color-text)]">
 			<DocumentSidebar
@@ -117,8 +147,14 @@ export default function App() {
 						key={currentDoc.id}
 						initialBlocks={parseDocumentContent(currentDoc.content)}
 						initialTitle={currentDoc.title ?? ""}
-						initialProperties={currentDoc.properties ?? "{}"}
+						initialPropertyValues={parseDocumentProperties(
+							currentDoc.properties ?? "{}",
+						)}
+						propertyDefinitions={propertyDefinitions}
 						onSave={onSaveDocument}
+						onCreateProperty={onCreateProperty}
+						onUpdateProperty={onUpdateProperty}
+						onDeleteProperty={onDeleteProperty}
 					/>
 				) : (
 					<div className="flex flex-1 items-center justify-center p-6 text-text-muted">

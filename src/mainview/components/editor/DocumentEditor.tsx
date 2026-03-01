@@ -4,6 +4,8 @@ import { BlockNoteView } from "@blocknote/mantine";
 import "@blocknote/core/fonts/inter.css";
 import "@blocknote/mantine/style.css";
 import type { Block, PartialBlock } from "@blocknote/core";
+import type { DocumentPropertyValues, Property } from "../../../shared/types";
+import { serializeDocumentProperties } from "../../lib/propertyValues";
 import { TitleBar } from "./TitleBar";
 import { PropertiesBar } from "./PropertiesBar";
 
@@ -12,29 +14,42 @@ const SAVE_DELAY_MS = 500;
 type DocumentEditorProps = {
 	initialBlocks: PartialBlock[] | undefined;
 	initialTitle: string;
-	initialProperties: string;
+	initialPropertyValues: DocumentPropertyValues;
+	propertyDefinitions: Property[];
 	onSave: (payload: {
 		content: string;
 		title?: string;
 		properties?: string;
 	}) => void;
+	onCreateProperty: (label: string, type: Property["type"]) => Promise<void>;
+	onUpdateProperty: (
+		id: number,
+		label?: string,
+		type?: Property["type"],
+	) => Promise<void>;
+	onDeleteProperty: (id: number) => Promise<void>;
 };
 
 export function DocumentEditor({
 	initialBlocks,
 	initialTitle,
-	initialProperties,
+	initialPropertyValues,
+	propertyDefinitions,
 	onSave,
+	onCreateProperty,
+	onUpdateProperty,
+	onDeleteProperty,
 }: DocumentEditorProps) {
 	const [title, setTitle] = useState(initialTitle);
-	const [properties, setProperties] = useState(initialProperties);
+	const [propertyValues, setPropertyValues] =
+		useState<DocumentPropertyValues>(initialPropertyValues);
 
 	const editor = useCreateBlockNote({ initialContent: initialBlocks });
 	const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 	const titleRef = useRef(title);
-	const propertiesRef = useRef(properties);
+	const propertyValuesRef = useRef(propertyValues);
 	titleRef.current = title;
-	propertiesRef.current = properties;
+	propertyValuesRef.current = propertyValues;
 
 	const scheduleSave = () => {
 		if (timerRef.current !== null) clearTimeout(timerRef.current);
@@ -44,7 +59,7 @@ export function DocumentEditor({
 			onSave({
 				content: JSON.stringify(editor.document as Block[]),
 				title: titleRef.current,
-				properties: propertiesRef.current,
+				properties: serializeDocumentProperties(propertyValuesRef.current),
 			});
 		}, SAVE_DELAY_MS);
 	};
@@ -58,7 +73,7 @@ export function DocumentEditor({
 		onSave({
 			content: JSON.stringify(editor.document as Block[]),
 			title: titleRef.current,
-			properties: propertiesRef.current,
+			properties: serializeDocumentProperties(propertyValuesRef.current),
 		});
 	};
 
@@ -80,9 +95,16 @@ export function DocumentEditor({
 				}}
 			/>
 			<PropertiesBar
-				value={properties}
-				onChange={setProperties}
+				definitions={propertyDefinitions}
+				values={propertyValues}
+				onChange={(next) => {
+					setPropertyValues(next);
+					scheduleSave();
+				}}
 				onBlur={flushSave}
+				onCreateProperty={onCreateProperty}
+				onUpdateProperty={onUpdateProperty}
+				onDeleteProperty={onDeleteProperty}
 			/>
 			<BlockNoteView
 				editor={editor}

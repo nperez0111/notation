@@ -69,3 +69,21 @@
 	--bn-font-family: var(--font-sans);
 	--bn-border-radius: var(--radius);
 }
+
+/* Notion-like properties section */
+.properties-section [data-notion-row]:hover {
+	background-color: rgba(255, 255, 255, 0.02);
+}
+.properties-section input::placeholder {
+	color: var(--color-text-subtle);
+}
+.properties-section input[type="date"],
+.properties-section input[type="time"],
+.properties-section input[type="number"] {
+	color-scheme: dark;
+}
+
+/* Base Web: ensure portaled dropdowns and popovers match dark theme */
+[data-baseweb] {
+	color-scheme: dark;
+}

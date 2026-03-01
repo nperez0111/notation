@@ -1,3 +1,5 @@
+import { Input } from "baseui/input";
+
 type TitleBarProps = {
 	value: string;
 	onChange: (value: string) => void;
@@ -13,14 +15,35 @@ export function TitleBar({
 }: TitleBarProps) {
 	return (
 		<div className="shrink-0 border-b border-border bg-surface-elevated px-6 py-3">
-			<input
-				type="text"
+			<Input
 				value={value}
-				onChange={(e) => onChange(e.target.value)}
+				onChange={(e) => onChange((e.target as HTMLInputElement).value)}
 				onBlur={onBlur}
 				placeholder={placeholder}
-				className="w-full bg-transparent text-xl font-semibold text-[var(--color-text)] placeholder:text-text-subtle focus:outline-none"
 				aria-label="Document title"
+				overrides={{
+					Root: {
+						style: { width: "100%", backgroundColor: "transparent" },
+					},
+					Input: {
+						style: ({ $theme }) => ({
+							fontSize: "1.25rem",
+							fontWeight: 600,
+							backgroundColor: "transparent",
+							"::placeholder": {
+								color: $theme.colors.contentTertiary,
+							},
+						}),
+					},
+					InputContainer: {
+						style: {
+							backgroundColor: "transparent",
+							borderWidth: 0,
+							paddingLeft: 0,
+							paddingRight: 0,
+						},
+					},
+				}}
 			/>
 		</div>
 	);

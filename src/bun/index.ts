@@ -4,7 +4,7 @@ import {
 	Updater,
 	Utils,
 } from "electrobun/bun";
-import type { Document, DocumentRPC } from "../shared/types";
+import type { Document, DocumentRPC, Property } from "../shared/types";
 import Database from "bun:sqlite";
 import { join } from "path";
 import { existsSync, mkdirSync } from "fs";
@@ -19,7 +19,16 @@ if (!existsSync(dataDir)) {
 const dbPath = join(dataDir, "documents.db");
 const db = new Database(dbPath, { create: true });
 
-// Create documents table: id, title, metadata, content, properties (opaque JSON)
+// Property definitions: shared label + type (values live in documents.properties as Record<id, string>)
+db.exec(`
+  CREATE TABLE IF NOT EXISTS property_definitions (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    label TEXT NOT NULL,
+    type TEXT NOT NULL CHECK (type IN ('string', 'number', 'date', 'time', 'checkbox'))
+  )
+`);
+
+// Documents: properties column is JSON Record<propertyId, string>
 db.exec(`
   CREATE TABLE IF NOT EXISTS documents (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -32,18 +41,6 @@ db.exec(`
     properties TEXT NOT NULL DEFAULT '{}'
   )
 `);
-
-// Migration: add title and properties if table already existed without them
-try {
-	db.exec("ALTER TABLE documents ADD COLUMN title TEXT NOT NULL DEFAULT ''");
-} catch {
-	/* column exists */
-}
-try {
-	db.exec("ALTER TABLE documents ADD COLUMN properties TEXT NOT NULL DEFAULT '{}'");
-} catch {
-	/* column exists */
-}
 
 const docColumns =
 	"id, title, created_at as createdAt, updated_at as updatedAt, created_by as createdBy, updated_by as updatedBy, content, properties";
@@ -62,6 +59,23 @@ const updateDocumentStmt = db.prepare(
 	`UPDATE documents SET title = ?, content = ?, updated_by = ?, updated_at = datetime('now'), properties = ? WHERE id = ? RETURNING ${docColumns}`,
 );
 const deleteDocumentStmt = db.prepare("DELETE FROM documents WHERE id = ?");
+
+const propColumns = "id, label, type";
+const getAllProperties = db.prepare(
+	`SELECT ${propColumns} FROM property_definitions ORDER BY id`,
+);
+const getPropertyById = db.prepare(
+	`SELECT ${propColumns} FROM property_definitions WHERE id = ?`,
+);
+const insertProperty = db.prepare(
+	`INSERT INTO property_definitions (label, type) VALUES (?, ?) RETURNING ${propColumns}`,
+);
+const updatePropertyStmt = db.prepare(
+	`UPDATE property_definitions SET label = COALESCE(?, label), type = COALESCE(?, type) WHERE id = ? RETURNING ${propColumns}`,
+);
+const deletePropertyStmt = db.prepare(
+	"DELETE FROM property_definitions WHERE id = ?",
+);
 
 const documentRPC = BrowserView.defineRPC<DocumentRPC>({
 	maxRequestTime: 5000,
@@ -96,6 +110,23 @@ const documentRPC = BrowserView.defineRPC<DocumentRPC>({
 			},
 			deleteDocument: ({ id }) => {
 				deleteDocumentStmt.run(id);
+				return { success: true };
+			},
+			getPropertyDefinitions: () => getAllProperties.all() as Property[],
+			createPropertyDefinition: ({ label, type }) =>
+				insertProperty.get(label, type) as Property,
+			updatePropertyDefinition: ({ id, label, type }) => {
+				const row = getPropertyById.get(id) as Property | undefined;
+				if (!row) return null;
+				const updated = updatePropertyStmt.get(
+					label ?? row.label,
+					type ?? row.type,
+					id,
+				) as Property | undefined;
+				return updated ?? null;
+			},
+			deletePropertyDefinition: ({ id }) => {
+				deletePropertyStmt.run(id);
 				return { success: true };
 			},
 		},

@@ -13,9 +13,12 @@
 		"@blocknote/core": "0.47.0",
 		"@blocknote/mantine": "0.47.0",
 		"@blocknote/react": "0.47.0",
+		"baseui": "16.1.1",
 		"electrobun": "1.14.4",
 		"react": "^18.3.1",
-		"react-dom": "^18.3.1"
+		"react-dom": "^18.3.1",
+		"styletron-engine-atomic": "1.6.2",
+		"styletron-react": "6.1.1"
 	},
 	"devDependencies": {
 		"@types/bun": "latest",

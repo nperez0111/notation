@@ -10,10 +10,28 @@ export type DocumentMetadata = {
 	updatedBy: string;
 };
 
+/** Supported property types. Values stored as strings and parsed by type. */
+export type PropertyType =
+	| "string"
+	| "number"
+	| "date"
+	| "time"
+	| "checkbox";
+
+/** A property definition shared across all documents (label + type). */
+export type Property = {
+	id: number;
+	label: string;
+	type: PropertyType;
+};
+
+/** Document property values: map of property id → string value (parsed by property type). */
+export type DocumentPropertyValues = Record<number, string>;
+
 /**
- * A document stored in the database: id, title, metadata, content, and optional properties.
+ * A document stored in the database: id, title, metadata, content, and property values.
  * - content: BlockNote JSON (stringified Block[]).
- * - properties: opaque JSON string (grab bag); store any JSON-serializable object.
+ * - properties: JSON string of DocumentPropertyValues (Record<propertyId, string>).
  */
 export type Document = {
 	id: number;
@@ -23,7 +41,7 @@ export type Document = {
 	createdBy: string;
 	updatedBy: string;
 	content: string;
-	properties: string; // opaque JSON object, e.g. '{}' or '{"key":"value"}'
+	properties: string; // JSON: Record<Property['id'], string>
 };
 
 /**
@@ -55,6 +73,19 @@ export type DocumentRPC = {
 				response: Document | null;
 			};
 			deleteDocument: { params: { id: number }; response: { success: boolean } };
+			getPropertyDefinitions: { params: {}; response: Property[] };
+			createPropertyDefinition: {
+				params: { label: string; type: PropertyType };
+				response: Property;
+			};
+			updatePropertyDefinition: {
+				params: { id: number; label?: string; type?: PropertyType };
+				response: Property | null;
+			};
+			deletePropertyDefinition: {
+				params: { id: number };
+				response: { success: boolean };
+			};
 		};
 		messages: {};
 	}>;

@@ -1,5 +1,5 @@
 import type { Document } from "../../../shared/types";
-import { Button } from "../ui/Button";
+import { Button } from "baseui/button";
 import { DocumentListItem } from "./DocumentListItem";
 
 type DocumentListProps = {
@@ -18,7 +18,14 @@ export function DocumentList({
 	return (
 		<>
 			<div className="border-b border-border p-3">
-				<Button variant="primary" className="w-full" onClick={onCreate}>
+				<Button
+					onClick={onCreate}
+					overrides={{
+						BaseButton: {
+							style: { width: "100%" },
+						},
+					}}
+				>
 					New note
 				</Button>
 			</div>
