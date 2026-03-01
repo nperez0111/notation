@@ -1,10 +1,15 @@
+import type { DocumentIcon } from "../../../shared/types";
 import { Input } from "baseui/input";
+import { DocumentIconView } from "../documents/DocumentIconView";
+import { DocumentIconPicker } from "../documents/DocumentIconPicker";
 
 type TitleBarProps = {
 	value: string;
 	onChange: (value: string) => void;
 	onBlur?: () => void;
 	placeholder?: string;
+	icon?: DocumentIcon;
+	onIconChange?: (icon: DocumentIcon) => void;
 };
 
 export function TitleBar({
@@ -12,9 +17,26 @@ export function TitleBar({
 	onChange,
 	onBlur,
 	placeholder = "Untitled",
+	icon,
+	onIconChange,
 }: TitleBarProps) {
 	return (
-		<div className="shrink-0 border-b border-border bg-surface-elevated px-6 py-3">
+		<div className="flex shrink-0 items-center gap-3 border-b border-border bg-surface-elevated px-6 py-3">
+			{onIconChange && (
+				<DocumentIconPicker
+					value={icon ?? null}
+					onSelect={onIconChange}
+					theme="dark"
+				>
+					{icon ? (
+						<DocumentIconView icon={icon} size={28} className="block shrink-0" />
+					) : (
+						<span className="flex h-7 w-7 shrink-0 items-center justify-center rounded text-sm text-text-subtle hover:bg-surface-hover">
+							+
+						</span>
+					)}
+				</DocumentIconPicker>
+			)}
 			<Input
 				value={value}
 				onChange={(e) => onChange((e.target as HTMLInputElement).value)}
@@ -23,7 +45,7 @@ export function TitleBar({
 				aria-label="Document title"
 				overrides={{
 					Root: {
-						style: { width: "100%", backgroundColor: "transparent" },
+						style: { flex: 1, minWidth: 0, backgroundColor: "transparent" },
 					},
 					Input: {
 						style: ({ $theme }) => ({

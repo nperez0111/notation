@@ -118,6 +118,23 @@ export default function App() {
 		[currentDoc, rpc],
 	);
 
+	const onIconChange = useCallback(
+		async (documentId: number, icon: Document["icon"]) => {
+			const updated = await rpc.updateDocument({
+				id: documentId,
+				updatedBy: DEFAULT_USER,
+				icon: icon ?? null,
+			});
+			if (!updated) return;
+			const next: Document = { ...updated, updatedAt: updated.updatedAt ?? new Date().toISOString() };
+			setCurrentDoc((prev) => (prev?.id === documentId ? next : prev));
+			setDocuments((prev) =>
+				prev.map((d) => (d.id === documentId ? next : d)),
+			);
+		},
+		[rpc],
+	);
+
 	const onCreateProperty = useCallback(
 		async (label: string, type: Property["type"]) => {
 			const created = await rpc.createPropertyDefinition({ label, type });
@@ -163,6 +180,7 @@ export default function App() {
 				onCreateDocument={onCreateDocument}
 				onCreateCollection={onCreateCollection}
 				onRenameCollection={onRenameCollection}
+				onIconChange={onIconChange}
 				onOpenSettings={() => setSettingsOpen(true)}
 			/>
 			<SettingsModal
@@ -199,14 +217,17 @@ export default function App() {
 				) : currentDoc ? (
 					<DocumentEditor
 						key={currentDoc.id}
+						documentId={currentDoc.id}
 						initialBlocks={parseDocumentContent(currentDoc.content)}
 						initialTitle={currentDoc.title ?? ""}
+						initialIcon={currentDoc.icon ?? null}
 						initialPropertyValues={parseDocumentProperties(
 							currentDoc.properties ?? "{}",
 						)}
 						propertyDefinitions={propertyDefinitions}
 						theme={resolvedTheme}
 						onSave={onSaveDocument}
+						onIconChange={onIconChange}
 						onCreateProperty={onCreateProperty}
 						onUpdateProperty={onUpdateProperty}
 						onDeleteProperty={onDeleteProperty}

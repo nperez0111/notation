@@ -37,11 +37,32 @@ export type Collection = {
 };
 
 /**
+ * Document icon: either a key from the fixed DOCUMENT_ICON set (e.g. "file", "star")
+ * or a single emoji character. Stored as a single string; if it matches a fixed key we
+ * render that icon, otherwise we render it as emoji.
+ */
+export type DocumentIcon = string | null;
+
+/** Fixed set of icon keys for documents. Values not in this set are treated as emoji. */
+export const DOCUMENT_ICON_KEYS = [
+	"file",
+	"folder",
+	"star",
+	"heart",
+	"pin",
+	"lightbulb",
+	"document",
+	"note",
+] as const;
+export type DocumentIconKey = (typeof DOCUMENT_ICON_KEYS)[number];
+
+/**
  * A document stored in the database: id, title, metadata, content, and property values.
  * - content: BlockNote JSON (stringified Block[]).
  * - properties: JSON string of DocumentPropertyValues (Record<propertyId, string>).
  * - collectionId: which collection this document belongs to.
  * - parentId: optional parent document for nesting; null means top-level in the collection.
+ * - icon: optional DocumentIcon (fixed key or emoji string).
  */
 export type Document = {
 	id: number;
@@ -54,6 +75,8 @@ export type Document = {
 	properties: string; // JSON: Record<Property['id'], string>
 	collectionId: number;
 	parentId: number | null;
+	/** Optional icon: fixed icon key or emoji string. */
+	icon?: DocumentIcon;
 };
 
 /** Settings info returned to the UI (database path and document count for prompts). */
@@ -91,6 +114,7 @@ export type DocumentRPC = {
 					properties?: string;
 					collectionId: number;
 					parentId?: number | null;
+					icon?: DocumentIcon;
 				};
 				response: Document;
 			};
@@ -103,6 +127,7 @@ export type DocumentRPC = {
 					properties?: string;
 					collectionId?: number;
 					parentId?: number | null;
+					icon?: DocumentIcon;
 				};
 				response: Document | null;
 			};

@@ -47,7 +47,7 @@ function saveSettings(settings: SettingsJson): void {
 }
 
 const docColumns =
-	"id, title, created_at as createdAt, updated_at as updatedAt, created_by as createdBy, updated_by as updatedBy, content, properties, collection_id as collectionId, parent_id as parentId";
+	"id, title, created_at as createdAt, updated_at as updatedAt, created_by as createdBy, updated_by as updatedBy, content, properties, collection_id as collectionId, parent_id as parentId, icon";
 const collColumns =
 	"id, name, created_at as createdAt, updated_at as updatedAt";
 const propColumns = "id, label, type";
@@ -122,6 +122,7 @@ function createDbState(dbDirectory: string): DbState {
 	const docInfo = db.query("PRAGMA table_info(documents)").all() as { name: string }[];
 	const hasCollectionId = docInfo.some((c) => c.name === "collection_id");
 	const hasParentId = docInfo.some((c) => c.name === "parent_id");
+	const hasIcon = docInfo.some((c) => c.name === "icon");
 	if (!hasCollectionId) {
 		db.exec("ALTER TABLE documents ADD COLUMN collection_id INTEGER REFERENCES collections(id)");
 		let defaultCollId: number;
@@ -138,6 +139,9 @@ function createDbState(dbDirectory: string): DbState {
 	}
 	if (!hasParentId) {
 		db.exec("ALTER TABLE documents ADD COLUMN parent_id INTEGER REFERENCES documents(id)");
+	}
+	if (!hasIcon) {
+		db.exec("ALTER TABLE documents ADD COLUMN icon TEXT");
 	}
 
 	if (!(db.query("SELECT id FROM collections LIMIT 1").get() as unknown)) {
@@ -168,10 +172,10 @@ function createDbState(dbDirectory: string): DbState {
 			`SELECT ${docColumns} FROM documents WHERE id = ?`,
 		),
 		insertDocument: db.prepare(
-			`INSERT INTO documents (title, content, created_by, updated_by, properties, collection_id, parent_id) VALUES (?, ?, ?, ?, ?, ?, ?) RETURNING ${docColumns}`,
+			`INSERT INTO documents (title, content, created_by, updated_by, properties, collection_id, parent_id, icon) VALUES (?, ?, ?, ?, ?, ?, ?, ?) RETURNING ${docColumns}`,
 		),
 		updateDocumentStmt: db.prepare(
-			`UPDATE documents SET title = COALESCE(?, title), content = COALESCE(?, content), updated_by = ?, updated_at = datetime('now'), properties = COALESCE(?, properties), collection_id = COALESCE(?, collection_id), parent_id = ? WHERE id = ? RETURNING ${docColumns}`,
+			`UPDATE documents SET title = COALESCE(?, title), content = COALESCE(?, content), updated_by = ?, updated_at = datetime('now'), properties = COALESCE(?, properties), collection_id = COALESCE(?, collection_id), parent_id = ?, icon = ? WHERE id = ? RETURNING ${docColumns}`,
 		),
 		deleteDocumentStmt: db.prepare("DELETE FROM documents WHERE id = ?"),
 		getAllProperties: db.prepare(
@@ -194,7 +198,6 @@ function createDbState(dbDirectory: string): DbState {
 		),
 	};
 }
-
 const initialSettings = loadSettings();
 const initialDbDirectory = initialSettings.dbDirectory ?? dataDir;
 let dbState = createDbState(initialDbDirectory);
@@ -251,6 +254,7 @@ const documentRPC = BrowserView.defineRPC<DocumentRPC>({
 				properties,
 				collectionId,
 				parentId,
+				icon,
 			}) => {
 				const props = properties ?? "{}";
 				return dbState.insertDocument.get(
@@ -261,6 +265,7 @@ const documentRPC = BrowserView.defineRPC<DocumentRPC>({
 					props,
 					collectionId,
 					parentId ?? null,
+					icon ?? null,
 				) as Document;
 			},
 			updateDocument: ({
@@ -271,6 +276,7 @@ const documentRPC = BrowserView.defineRPC<DocumentRPC>({
 				properties,
 				collectionId,
 				parentId,
+				icon,
 			}) => {
 				const row = dbState.getDocumentById.get(id) as Document | undefined;
 				if (!row) return null;
@@ -280,6 +286,7 @@ const documentRPC = BrowserView.defineRPC<DocumentRPC>({
 				const newCollectionId = collectionId ?? row.collectionId;
 				const newParentId =
 					parentId !== undefined ? parentId : row.parentId;
+				const newIcon = icon !== undefined ? icon : (row as { icon?: string | null }).icon;
 				const updated = dbState.updateDocumentStmt.get(
 					newTitle,
 					newContent,
@@ -287,6 +294,7 @@ const documentRPC = BrowserView.defineRPC<DocumentRPC>({
 					newProps,
 					newCollectionId,
 					newParentId,
+					newIcon ?? null,
 					id,
 				) as Document | undefined;
 				return updated ?? null;

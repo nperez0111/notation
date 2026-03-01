@@ -15,6 +15,7 @@ type CollectionSectionProps = {
 	onSelect: (id: number) => void;
 	onCreateDocument: (collectionId: number, parentId?: number | null) => void;
 	onRenameCollection?: (id: number, name: string) => void;
+	onIconChange?: (documentId: number, icon: Document["icon"]) => void;
 };
 
 function DocumentTreeItem({
@@ -25,6 +26,7 @@ function DocumentTreeItem({
 	selectedId,
 	onSelect,
 	onCreateDocument,
+	onIconChange,
 }: {
 	doc: Document;
 	depth: number;
@@ -33,6 +35,7 @@ function DocumentTreeItem({
 	selectedId: number | null;
 	onSelect: (id: number) => void;
 	onCreateDocument: (collectionId: number, parentId?: number | null) => void;
+	onIconChange?: (documentId: number, icon: Document["icon"]) => void;
 }) {
 	const children = getChildDocuments(byParent, doc.id);
 	const [expanded, setExpanded] = useState(true);
@@ -51,6 +54,7 @@ function DocumentTreeItem({
 				hasChildren={children.length > 0}
 				expanded={expanded}
 				onToggleExpand={children.length > 0 ? () => setExpanded((e) => !e) : undefined}
+				onIconChange={onIconChange}
 			/>
 			{expanded &&
 				children.map((child) => (
@@ -63,6 +67,7 @@ function DocumentTreeItem({
 						selectedId={selectedId}
 						onSelect={onSelect}
 						onCreateDocument={onCreateDocument}
+						onIconChange={onIconChange}
 					/>
 				))}
 		</>
@@ -76,6 +81,7 @@ export function CollectionSection({
 	onSelect,
 	onCreateDocument,
 	onRenameCollection,
+	onIconChange,
 }: CollectionSectionProps) {
 	const [expanded, setExpanded] = useState(true);
 	const [menuOpen, setMenuOpen] = useState(false);
@@ -218,6 +224,7 @@ export function CollectionSection({
 								selectedId={selectedId}
 								onSelect={onSelect}
 								onCreateDocument={onCreateDocument}
+								onIconChange={onIconChange}
 							/>
 						))}
 					</ul>

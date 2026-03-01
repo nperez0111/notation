@@ -9,6 +9,7 @@ type DocumentListProps = {
 	onCreateDocument: (collectionId: number, parentId?: number | null) => void;
 	onCreateCollection?: () => void;
 	onRenameCollection?: (id: number, name: string) => void;
+	onIconChange?: (documentId: number, icon: Document["icon"]) => void;
 };
 
 export function DocumentList({
@@ -19,6 +20,7 @@ export function DocumentList({
 	onCreateDocument,
 	onCreateCollection,
 	onRenameCollection,
+	onIconChange,
 }: DocumentListProps) {
 	return (
 		<>
@@ -43,6 +45,7 @@ export function DocumentList({
 							onSelect={onSelect}
 							onCreateDocument={onCreateDocument}
 							onRenameCollection={onRenameCollection}
+							onIconChange={onIconChange}
 						/>
 					</li>
 				))}

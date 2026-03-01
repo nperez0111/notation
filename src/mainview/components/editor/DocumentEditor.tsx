@@ -4,7 +4,11 @@ import { BlockNoteView } from "@blocknote/mantine";
 import "@blocknote/core/fonts/inter.css";
 import "@blocknote/mantine/style.css";
 import type { Block, PartialBlock } from "@blocknote/core";
-import type { DocumentPropertyValues, Property } from "../../../shared/types";
+import type {
+	DocumentIcon,
+	DocumentPropertyValues,
+	Property,
+} from "../../../shared/types";
 import { serializeDocumentProperties } from "../../lib/propertyValues";
 import { TitleBar } from "./TitleBar";
 import { PropertiesBar } from "./PropertiesBar";
@@ -14,6 +18,7 @@ const SAVE_DELAY_MS = 500;
 type DocumentEditorProps = {
 	initialBlocks: PartialBlock[] | undefined;
 	initialTitle: string;
+	initialIcon: DocumentIcon;
 	initialPropertyValues: DocumentPropertyValues;
 	propertyDefinitions: Property[];
 	theme?: "light" | "dark";
@@ -22,6 +27,8 @@ type DocumentEditorProps = {
 		title?: string;
 		properties?: string;
 	}) => void;
+	onIconChange: (documentId: number, icon: DocumentIcon) => void;
+	documentId: number;
 	onCreateProperty: (label: string, type: Property["type"]) => Promise<void>;
 	onUpdateProperty: (
 		id: number,
@@ -35,10 +42,13 @@ type DocumentEditorProps = {
 export function DocumentEditor({
 	initialBlocks,
 	initialTitle,
+	initialIcon,
 	initialPropertyValues,
 	propertyDefinitions,
 	theme = "dark",
 	onSave,
+	onIconChange,
+	documentId,
 	onCreateProperty,
 	onUpdateProperty,
 	onDeleteProperty,
@@ -97,6 +107,8 @@ export function DocumentEditor({
 				onBlur={() => {
 					scheduleSave();
 				}}
+				icon={initialIcon}
+				onIconChange={(icon) => onIconChange(documentId, icon)}
 			/>
 			<PropertiesBar
 				definitions={propertyDefinitions}

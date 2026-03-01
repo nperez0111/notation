@@ -10,6 +10,7 @@ type DocumentSidebarProps = {
 	onCreateDocument: (collectionId: number, parentId?: number | null) => void;
 	onCreateCollection?: () => void;
 	onRenameCollection?: (id: number, name: string) => void;
+	onIconChange?: (documentId: number, icon: Document["icon"]) => void;
 	onOpenSettings?: () => void;
 };
 
@@ -42,6 +43,7 @@ export function DocumentSidebar({
 	onCreateDocument,
 	onCreateCollection,
 	onRenameCollection,
+	onIconChange,
 	onOpenSettings,
 }: DocumentSidebarProps) {
 	return (
@@ -54,6 +56,7 @@ export function DocumentSidebar({
 				onCreateDocument={onCreateDocument}
 				onCreateCollection={onCreateCollection}
 				onRenameCollection={onRenameCollection}
+				onIconChange={onIconChange}
 			/>
 			{onOpenSettings && (
 				<div className="shrink-0 border-t border-[var(--color-border)] p-2">

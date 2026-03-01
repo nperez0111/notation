@@ -1,4 +1,6 @@
 import type { Document } from "../../../shared/types";
+import { DocumentIconView } from "./DocumentIconView";
+import { DocumentIconPicker } from "./DocumentIconPicker";
 
 type DocumentListItemProps = {
 	document: Document;
@@ -14,6 +16,8 @@ type DocumentListItemProps = {
 	expanded?: boolean;
 	/** Toggle expand/collapse of nested children. */
 	onToggleExpand?: () => void;
+	/** Called when document icon changes. */
+	onIconChange?: (documentId: number, icon: Document["icon"]) => void;
 };
 
 const DEPTH_PADDING = 12; // px per nesting level
@@ -27,6 +31,7 @@ export function DocumentListItem({
 	hasChildren = false,
 	expanded = true,
 	onToggleExpand,
+	onIconChange,
 }: DocumentListItemProps) {
 	const title = doc.title?.trim() || "Untitled";
 	const date = new Date(doc.updatedAt).toLocaleDateString(undefined, {
@@ -60,20 +65,54 @@ export function DocumentListItem({
 					</span>
 				</button>
 			)}
-			<button
-				type="button"
+			<div
+				role="button"
+				tabIndex={0}
 				onClick={onSelect}
+				onKeyDown={(e) => {
+					if (e.key === "Enter" || e.key === " ") {
+						e.preventDefault();
+						onSelect();
+					}
+				}}
 				style={{ paddingLeft: hasChildren ? 8 : indent + 12 }}
-				className={`min-w-0 flex-1 rounded-lg py-2.5 pr-8 text-left text-sm transition-colors ${
+				className={`flex min-w-0 flex-1 cursor-pointer items-start gap-2 rounded-lg py-2.5 pr-8 text-left text-sm transition-colors ${
 					isSelected
 						? "bg-accent-muted text-accent-text font-medium"
 						: "text-text-muted hover:bg-surface-hover hover:text-[var(--color-text)]"
 				}`}
 				title={title}
 			>
-				<span className="block truncate">{title}</span>
-				<span className="mt-0.5 block text-xs text-text-subtle">{date}</span>
-			</button>
+				{onIconChange ? (
+					<span
+						className="shrink-0 pt-0.5"
+						onClick={(e) => e.stopPropagation()}
+						onMouseDown={(e) => e.stopPropagation()}
+					>
+						<DocumentIconPicker
+							value={doc.icon ?? null}
+							onSelect={(icon) => onIconChange(doc.id, icon)}
+							theme="dark"
+						>
+							{doc.icon ? (
+								<DocumentIconView icon={doc.icon} size={18} className="block" />
+							) : (
+								<span className="flex h-[18px] w-[18px] items-center justify-center text-xs text-text-subtle">
+									+
+								</span>
+							)}
+						</DocumentIconPicker>
+					</span>
+				) : doc.icon ? (
+					<span className="shrink-0 pt-0.5">
+						<DocumentIconView icon={doc.icon} size={18} className="block" />
+					</span>
+				) : null}
+				<span className="min-w-0 flex-1">
+					<span className="block truncate">{title}</span>
+					<span className="mt-0.5 block text-xs text-text-subtle">{date}</span>
+				</span>
+			</div>
 			{onCreateChild && (
 				<button
 					type="button"
