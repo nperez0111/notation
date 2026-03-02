@@ -1,7 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { draggable, dropTargetForElements } from "@atlaskit/pragmatic-drag-and-drop/element/adapter";
 import type { Collection, Document } from "../../../shared/types";
-import { Button } from "baseui/button";
 import { StatefulPopover } from "baseui/popover";
 import { DocumentListItem } from "./DocumentListItem";
 import {
@@ -74,7 +73,7 @@ function SidebarDropStrip({
 	return (
 		<div
 			ref={ref}
-			className="relative min-h-[6px] shrink-0"
+			className="relative min-h-px shrink-0"
 		>
 			{isActive && (
 				<div
@@ -278,15 +277,15 @@ export function CollectionSection({
 
 	return (
 		<section className="border-b border-border last:border-b-0">
-			<div className="flex w-full items-center gap-1 rounded-lg px-3 py-2.5 text-sm font-semibold text-[var(--color-text)]">
+			<div className="flex w-full items-center gap-1 rounded-md px-3 py-1 text-xs font-semibold tracking-wide text-text-subtle">
 				<button
 					type="button"
 					onClick={() => setExpanded((e) => !e)}
-					className="flex min-w-0 flex-1 items-center gap-1.5 rounded text-left hover:bg-surface-hover"
+					className="group flex min-w-0 flex-1 items-center gap-1.5 rounded text-left hover:bg-surface-hover"
 					aria-expanded={expanded}
 				>
 					<span
-						className={`inline-block shrink-0 transition-transform ${expanded ? "rotate-90" : ""}`}
+						className={`inline-block shrink-0 text-xs opacity-0 transition-transform group-hover:opacity-100 ${expanded ? "rotate-90" : ""}`}
 						aria-hidden
 					>
 						▸
@@ -309,7 +308,9 @@ export function CollectionSection({
 							aria-label="Rename collection"
 						/>
 					) : (
-						<span className="min-w-0 flex-1 truncate">{collection.name}</span>
+						<span className="min-w-0 flex-1 truncate uppercase">
+							{collection.name}
+						</span>
 					)}
 				</button>
 				{onRenameCollection && !editingName && (
@@ -344,22 +345,8 @@ export function CollectionSection({
 				)}
 			</div>
 			{expanded && (
-				<div className="pb-2">
-					<div className="px-2">
-						<Button
-							size="compact"
-							kind="tertiary"
-							onClick={() => onCreateDocument(collection.id, null)}
-							overrides={{
-								BaseButton: {
-									style: { width: "100%", fontSize: "12px" },
-								},
-							}}
-						>
-							New note
-						</Button>
-					</div>
-					<div className="mt-1 flex flex-col gap-0.5 px-2" role="list">
+				<div className="pb-1">
+					<div className="mt-0 flex flex-col gap-0 px-2" role="list">
 						{onReparentDocument && (
 							<SidebarDropStrip
 								dropKey="before-first"

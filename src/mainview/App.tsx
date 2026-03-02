@@ -210,7 +210,7 @@ export default function App() {
 	);
 
 	return (
-		<div className="flex min-h-screen bg-[var(--color-surface-elevated)] text-[var(--color-text)]">
+		<div className="flex h-screen overflow-hidden bg-[var(--color-surface-elevated)] text-[var(--color-text)]">
 			<DocumentSidebar
 				settings={settings}
 				collections={collections}
@@ -233,7 +233,7 @@ export default function App() {
 				onThemeChange={setTheme}
 				onDatabaseReload={refetchFromDatabase}
 			/>
-			<main className="flex min-w-0 flex-1 flex-col">
+			<main className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
 				{loading ? (
 					<div className="flex flex-1 items-center justify-center p-6 text-text-muted">
 						Loading…

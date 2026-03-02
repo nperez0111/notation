@@ -1,4 +1,5 @@
 import type { Document } from "../../../shared/types";
+import { StatefulPopover } from "baseui/popover";
 import { DocumentIconView } from "./DocumentIconView";
 import { DocumentIconPicker } from "./DocumentIconPicker";
 
@@ -22,6 +23,19 @@ type DocumentListItemProps = {
 
 const DEPTH_PADDING = 12; // px per nesting level
 
+const sidebarPopoverOverrides = {
+	Body: {
+		style: {
+			borderRadius: "8px",
+			boxShadow: "0 4px 12px rgba(0,0,0,0.4)",
+			backgroundColor: "var(--color-surface)",
+			border: "1px solid var(--color-border)",
+			minWidth: "140px",
+		},
+	},
+	Inner: { style: {} },
+};
+
 export function DocumentListItem({
 	document: doc,
 	isSelected,
@@ -34,37 +48,10 @@ export function DocumentListItem({
 	onIconChange,
 }: DocumentListItemProps) {
 	const title = doc.title?.trim() || "Untitled";
-	const date = new Date(doc.updatedAt).toLocaleDateString(undefined, {
-		month: "short",
-		day: "numeric",
-		year: "numeric",
-	});
 	const indent = depth * DEPTH_PADDING;
 
 	return (
-		<div
-			className="group relative flex min-w-0 items-center gap-0 overflow-hidden"
-			style={hasChildren ? { paddingLeft: indent } : undefined}
-		>
-			{hasChildren && (
-				<button
-					type="button"
-					onClick={(e) => {
-						e.stopPropagation();
-						onToggleExpand?.();
-					}}
-					className="flex shrink-0 items-center justify-center rounded p-0.5 text-text-muted hover:bg-surface-hover hover:text-[var(--color-text)] w-5 min-w-[20px]"
-					aria-expanded={expanded}
-					aria-label={expanded ? "Collapse nested documents" : "Expand nested documents"}
-				>
-					<span
-						className={`inline-block transition-transform ${expanded ? "rotate-90" : ""}`}
-						aria-hidden
-					>
-						▸
-					</span>
-				</button>
-			)}
+		<div className="group relative flex min-w-0 items-center gap-1 overflow-hidden" style={{ paddingLeft: indent + 6 }}>
 			<div
 				role="button"
 				tabIndex={0}
@@ -75,57 +62,117 @@ export function DocumentListItem({
 						onSelect();
 					}
 				}}
-				style={{ paddingLeft: hasChildren ? 8 : indent + 12 }}
-				className={`flex min-w-0 flex-1 cursor-pointer items-start gap-2 rounded-lg py-2.5 pr-8 text-left text-sm transition-colors ${
+				className={`flex min-w-0 flex-1 cursor-pointer items-center gap-1.5 rounded-md py-1 pr-8 text-left text-sm transition-colors ${
 					isSelected
 						? "bg-accent-muted text-accent-text font-medium"
 						: "text-text-muted hover:bg-surface-hover hover:text-[var(--color-text)]"
 				}`}
 				title={title}
 			>
-				{onIconChange ? (
-					<span
-						className="shrink-0 pt-0.5"
-						onClick={(e) => e.stopPropagation()}
-						onMouseDown={(e) => e.stopPropagation()}
-					>
-						<DocumentIconPicker
-							value={doc.icon ?? null}
-							onSelect={(icon) => onIconChange(doc.id, icon)}
-							theme="dark"
+				<span className="relative flex h-5 w-5 shrink-0 items-center justify-center">
+					{onIconChange ? (
+						<span
+							className={`shrink-0 pt-0.5 transition-opacity ${
+								hasChildren ? "group-hover:opacity-0" : ""
+							}`}
+							onClick={(e) => e.stopPropagation()}
+							onMouseDown={(e) => e.stopPropagation()}
 						>
-							{doc.icon ? (
-								<DocumentIconView icon={doc.icon} size={18} className="block" />
-							) : (
-								<span className="flex h-[18px] w-[18px] items-center justify-center text-xs text-text-subtle">
-									+
-								</span>
-							)}
-						</DocumentIconPicker>
-					</span>
-				) : doc.icon ? (
-					<span className="shrink-0 pt-0.5">
-						<DocumentIconView icon={doc.icon} size={18} className="block" />
-					</span>
-				) : null}
+							<DocumentIconPicker
+								value={doc.icon ?? null}
+								onSelect={(icon) => onIconChange(doc.id, icon)}
+								theme="dark"
+							>
+								{doc.icon ? (
+									<DocumentIconView icon={doc.icon} size={18} className="block" />
+								) : (
+									<span className="flex h-[18px] w-[18px] items-center justify-center text-xs text-text-subtle">
+										+
+									</span>
+								)}
+							</DocumentIconPicker>
+						</span>
+					) : doc.icon ? (
+						<span
+							className={`shrink-0 pt-0.5 transition-opacity ${
+								hasChildren ? "group-hover:opacity-0" : ""
+							}`}
+						>
+							<DocumentIconView icon={doc.icon} size={18} className="block" />
+						</span>
+					) : null}
+					{hasChildren && (
+						<button
+							type="button"
+							onClick={(e) => {
+								e.stopPropagation();
+								onToggleExpand?.();
+							}}
+							className="absolute inset-[-2px] flex items-center justify-center rounded text-text-muted opacity-0 transition-opacity group-hover:opacity-100 hover:bg-surface-hover hover:text-[var(--color-text)]"
+							aria-expanded={expanded}
+							aria-label={expanded ? "Collapse nested documents" : "Expand nested documents"}
+						>
+							<span
+								className={`inline-block text-xs transition-transform ${
+									expanded ? "rotate-90" : ""
+								}`}
+								aria-hidden
+							>
+								▸
+							</span>
+						</button>
+					)}
+				</span>
 				<span className="min-w-0 flex-1">
 					<span className="block truncate">{title}</span>
-					<span className="mt-0.5 block text-xs text-text-subtle">{date}</span>
 				</span>
 			</div>
 			{onCreateChild && (
-				<button
-					type="button"
-					onClick={(e) => {
-						e.stopPropagation();
-						onCreateChild();
-					}}
-					className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-1 text-text-subtle opacity-0 hover:bg-surface-hover hover:text-[var(--color-text)] group-hover:opacity-100"
-					title="Add sub-note"
-					aria-label="Add sub-note"
-				>
-					+
-				</button>
+				<div className="pointer-events-none absolute right-1.5 top-1/2 flex -translate-y-1/2 items-center gap-0.5 opacity-0 transition-opacity group-hover:opacity-100">
+					<button
+						type="button"
+						onClick={(e) => {
+							e.stopPropagation();
+							onCreateChild();
+						}}
+						className="pointer-events-auto rounded p-1 text-text-subtle hover:bg-surface-hover hover:text-[var(--color-text)]"
+						title="Add sub-note"
+						aria-label="Add sub-note"
+					>
+						+
+					</button>
+					<StatefulPopover
+						placement="bottomRight"
+						content={({ close }) => (
+							<div className="min-w-[140px] py-1" role="menu">
+								<button
+									type="button"
+									role="menuitem"
+									className="w-full px-3 py-2 text-left text-sm text-[var(--color-text)] hover:bg-surface-hover"
+									onClick={() => {
+										onCreateChild();
+										close();
+									}}
+								>
+									Add sub-note
+								</button>
+							</div>
+						)}
+						overrides={sidebarPopoverOverrides}
+					>
+						<button
+							type="button"
+							onClick={(e) => {
+								e.stopPropagation();
+							}}
+							className="pointer-events-auto rounded p-1 text-text-muted hover:bg-surface-hover hover:text-[var(--color-text)]"
+							aria-label="More options"
+							aria-haspopup="menu"
+						>
+							⋯
+						</button>
+					</StatefulPopover>
+				</div>
 			)}
 		</div>
 	);
