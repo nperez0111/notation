@@ -76,10 +76,22 @@ export function SettingsModal({
 			animate
 			size="default"
 			overrides={{
+				Root: {
+					style: {
+						zIndex: 10000,
+					},
+				},
+				DialogContainer: {
+					style: {
+						backgroundColor: "rgba(0, 0, 0, 0.6)",
+					},
+				},
 				Dialog: {
 					style: {
 						maxWidth: "480px",
 						borderRadius: "var(--radius)",
+						backgroundColor: "var(--color-surface-elevated)",
+						boxShadow: "0 24px 60px rgba(0, 0, 0, 0.8)",
 					},
 				},
 			}}
