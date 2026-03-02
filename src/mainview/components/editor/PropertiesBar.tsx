@@ -85,6 +85,12 @@ const inputOverrides = {
 			borderRadius: "6px",
 		},
 	},
+	InputContainer: {
+		style: {
+			backgroundColor: "transparent",
+			borderWidth: 0,
+		},
+	},
 	Input: {
 		style: {
 			fontSize: "13px",
@@ -533,7 +539,7 @@ export function PropertiesBar({
 						/>
 					))}
 					{adding && (
-						<div className="flex flex-wrap items-center gap-2 border-t border-border/60 py-2">
+						<div className="flex flex-wrap items-center gap-2 py-2">
 							<div className="min-w-0 flex-1" style={{ minWidth: "120px" }}>
 								<Input
 									inputRef={addInputRef}

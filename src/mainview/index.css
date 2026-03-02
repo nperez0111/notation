@@ -72,11 +72,12 @@
 	}
 }
 
-/* BlockNote dark theme overrides (match our palette) */
+/* BlockNote theme: override CSS variables to match our palette.
+   See https://www.blocknotejs.org/docs/react/styling-theming/themes */
 .bn-container[data-color-scheme="dark"],
 .bn-container[data-color-scheme="light"] {
 	--bn-colors-editor-text: var(--color-text);
-	--bn-colors-editor-background: var(--color-bg);
+	--bn-colors-editor-background: var(--color-surface-elevated);
 	--bn-colors-menu-text: var(--color-text);
 	--bn-colors-menu-background: var(--color-surface-elevated);
 	--bn-colors-tooltip-text: var(--color-text);
@@ -92,6 +93,11 @@
 	--bn-colors-side-menu: var(--color-text-subtle);
 	--bn-font-family: var(--font-sans);
 	--bn-border-radius: var(--radius);
+}
+
+/* Force .bn-editor background to match pane (overrides BlockNote default) */
+.bn-editor {
+	background-color: var(--color-surface-elevated) !important;
 }
 
 /* Notion-like properties section */

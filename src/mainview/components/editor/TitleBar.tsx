@@ -21,7 +21,7 @@ export function TitleBar({
 	onIconChange,
 }: TitleBarProps) {
 	return (
-		<div className="flex shrink-0 items-center gap-3 border-b border-border bg-surface-elevated px-6 py-3">
+		<div className="flex shrink-0 items-center gap-3 border-b border-border px-6 py-3">
 			{onIconChange && (
 				<DocumentIconPicker
 					value={icon ?? null}

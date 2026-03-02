@@ -171,7 +171,7 @@ export default function App() {
 	);
 
 	return (
-		<div className="flex min-h-screen bg-[var(--color-bg)] text-[var(--color-text)]">
+		<div className="flex min-h-screen bg-[var(--color-surface-elevated)] text-[var(--color-text)]">
 			<DocumentSidebar
 				collections={collections}
 				documents={documents}
