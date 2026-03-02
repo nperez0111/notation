@@ -1,5 +1,6 @@
-import { useRef, useState, useEffect } from "react";
+import { useRef, useState } from "react";
 import type { DocumentIcon } from "../../../shared/types";
+import { useClickOutside } from "../../hooks/useClickOutside";
 import { EmojiMartPickerPanel } from "./EmojiMartPickerPanel";
 
 type DocumentIconPickerProps = {
@@ -22,20 +23,7 @@ export function DocumentIconPicker({
 	const anchorRef = useRef<HTMLDivElement>(null);
 	const panelRef = useRef<HTMLDivElement>(null);
 
-	useEffect(() => {
-		if (!open) return;
-		const close = (e: MouseEvent) => {
-			if (
-				anchorRef.current?.contains(e.target as Node) ||
-				panelRef.current?.contains(e.target as Node)
-			) {
-				return;
-			}
-			setOpen(false);
-		};
-		document.addEventListener("mousedown", close);
-		return () => document.removeEventListener("mousedown", close);
-	}, [open]);
+	useClickOutside([anchorRef, panelRef], open, () => setOpen(false));
 
 	const handleSelect = (icon: DocumentIcon) => {
 		onSelect(icon);

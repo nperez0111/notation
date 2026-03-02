@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { draggable, dropTargetForElements } from "@atlaskit/pragmatic-drag-and-drop/element/adapter";
+import { useClickOutside } from "../../hooks/useClickOutside";
 import type { Collection, Document } from "../../../shared/types";
 import { Button } from "baseui/button";
 import { DocumentListItem } from "./DocumentListItem";
@@ -243,10 +244,11 @@ export function CollectionSection({
 	const byParent = buildDocumentTree(documents, collection.id);
 	const roots = getRootDocuments(byParent);
 
-	// Sync edit value when collection name changes from parent (e.g. after rename)
-	useEffect(() => {
-		if (!editingName) setEditValue(collection.name);
-	}, [collection.name, editingName]);
+	const startEditingName = () => {
+		setEditValue(collection.name);
+		setEditingName(true);
+		setMenuOpen(false);
+	};
 
 	// Focus input when entering rename mode
 	useEffect(() => {
@@ -256,17 +258,7 @@ export function CollectionSection({
 		}
 	}, [editingName]);
 
-	// Close menu when clicking outside
-	useEffect(() => {
-		if (!menuOpen) return;
-		const close = (e: MouseEvent) => {
-			if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
-				setMenuOpen(false);
-			}
-		};
-		document.addEventListener("mousedown", close);
-		return () => document.removeEventListener("mousedown", close);
-	}, [menuOpen]);
+	useClickOutside([menuRef], menuOpen, () => setMenuOpen(false));
 
 	const submitRename = () => {
 		const trimmed = editValue.trim();
@@ -335,10 +327,7 @@ export function CollectionSection({
 									type="button"
 									role="menuitem"
 									className="w-full px-3 py-2 text-left text-sm text-[var(--color-text)] hover:bg-surface-hover"
-									onClick={() => {
-										setEditingName(true);
-										setMenuOpen(false);
-									}}
+									onClick={startEditingName}
 								>
 									Rename
 								</button>

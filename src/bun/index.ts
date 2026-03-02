@@ -79,37 +79,19 @@ type DbState = {
 	updatePropertyPosition: ReturnType<Database.Database["prepare"]>;
 };
 
-function createDbState(dbDirectory: string): DbState {
-	if (!existsSync(dbDirectory)) {
-		mkdirSync(dbDirectory, { recursive: true });
-	}
-	const dbPath = join(dbDirectory, DB_FILENAME);
-	const db = new Database(dbPath, { create: true });
-
-	db.exec(`
+const INIT_SCHEMA = `
   CREATE TABLE IF NOT EXISTS property_definitions (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     label TEXT NOT NULL,
     type TEXT NOT NULL CHECK (type IN ('string', 'number', 'date', 'time', 'checkbox')),
     position INTEGER NOT NULL DEFAULT 0
-  )
-`);
-	try {
-		db.exec(`ALTER TABLE property_definitions ADD COLUMN position INTEGER NOT NULL DEFAULT 0`);
-	} catch {
-		// Column already exists
-	}
-
-	db.exec(`
+  );
   CREATE TABLE IF NOT EXISTS collections (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     name TEXT NOT NULL DEFAULT 'Unnamed',
     created_at TEXT NOT NULL DEFAULT (datetime('now')),
     updated_at TEXT NOT NULL DEFAULT (datetime('now'))
-  )
-`);
-
-	db.exec(`
+  );
   CREATE TABLE IF NOT EXISTS documents (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     title TEXT NOT NULL DEFAULT '',
@@ -120,33 +102,25 @@ function createDbState(dbDirectory: string): DbState {
     content TEXT NOT NULL DEFAULT '[]',
     properties TEXT NOT NULL DEFAULT '{}',
     collection_id INTEGER NOT NULL REFERENCES collections(id),
-    parent_id INTEGER REFERENCES documents(id)
-  )
-`);
+    parent_id INTEGER REFERENCES documents(id),
+    icon TEXT
+  );
+`;
 
-	const docInfo = db.query("PRAGMA table_info(documents)").all() as { name: string }[];
-	const hasCollectionId = docInfo.some((c) => c.name === "collection_id");
-	const hasParentId = docInfo.some((c) => c.name === "parent_id");
-	const hasIcon = docInfo.some((c) => c.name === "icon");
-	if (!hasCollectionId) {
-		db.exec("ALTER TABLE documents ADD COLUMN collection_id INTEGER REFERENCES collections(id)");
-		let defaultCollId: number;
-		const existing = db.query("SELECT id FROM collections LIMIT 1").get() as { id: number } | undefined;
-		if (existing) {
-			defaultCollId = existing.id;
-		} else {
-			db.exec("INSERT INTO collections (name) VALUES ('Default')");
-			defaultCollId = (db.query("SELECT last_insert_rowid() as id").get() as { id: number }).id;
-		}
-		db.prepare(
-			"UPDATE documents SET collection_id = ? WHERE collection_id IS NULL",
-		).run(defaultCollId);
+function createDbState(dbDirectory: string): DbState {
+	if (!existsSync(dbDirectory)) {
+		mkdirSync(dbDirectory, { recursive: true });
 	}
-	if (!hasParentId) {
-		db.exec("ALTER TABLE documents ADD COLUMN parent_id INTEGER REFERENCES documents(id)");
-	}
-	if (!hasIcon) {
+	const dbPath = join(dbDirectory, DB_FILENAME);
+	const db = new Database(dbPath, { create: true });
+
+	db.exec(INIT_SCHEMA);
+
+	// Single migration: ensure columns exist for DBs created before final schema (no multi-stage).
+	try {
 		db.exec("ALTER TABLE documents ADD COLUMN icon TEXT");
+	} catch {
+		// Column already exists
 	}
 
 	if (!(db.query("SELECT id FROM collections LIMIT 1").get() as unknown)) {

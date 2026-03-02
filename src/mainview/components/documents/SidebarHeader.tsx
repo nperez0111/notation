@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import type { SettingsInfo } from "../../../shared/types";
+import { useClickOutside } from "../../hooks/useClickOutside";
 
 type SidebarHeaderProps = {
 	settings: SettingsInfo | null;
@@ -36,7 +37,7 @@ export function SidebarHeader({
 	const [switcherOpen, setSwitcherOpen] = useState(false);
 	const [plusMenuOpen, setPlusMenuOpen] = useState(false);
 	const [editingName, setEditingName] = useState(false);
-	const [nameDraft, setNameDraft] = useState(settings?.databaseName ?? "");
+	const [nameDraft, setNameDraft] = useState("");
 	const switcherRef = useRef<HTMLDivElement>(null);
 	const plusMenuRef = useRef<HTMLDivElement>(null);
 	const nameInputRef = useRef<HTMLInputElement>(null);
@@ -48,33 +49,18 @@ export function SidebarHeader({
 	const dbIcon = settings?.databaseIcon;
 	const recent = settings?.recentDatabases ?? [];
 
-	useEffect(() => {
-		setNameDraft(
-			!settings ? "" : (settings.databaseName ?? settings.dbDirectory.split("/").filter(Boolean).pop() ?? ""),
-		);
-	}, [settings?.databaseName, settings?.dbDirectory]);
+	const startEditingName = () => {
+		setNameDraft(dbName);
+		setEditingName(true);
+		setSwitcherOpen(false);
+	};
 
 	useEffect(() => {
 		if (editingName) nameInputRef.current?.focus();
 	}, [editingName]);
 
-	useEffect(() => {
-		if (!switcherOpen) return;
-		const close = (e: MouseEvent) => {
-			if (switcherRef.current && !switcherRef.current.contains(e.target as Node)) setSwitcherOpen(false);
-		};
-		document.addEventListener("mousedown", close);
-		return () => document.removeEventListener("mousedown", close);
-	}, [switcherOpen]);
-
-	useEffect(() => {
-		if (!plusMenuOpen) return;
-		const close = (e: MouseEvent) => {
-			if (plusMenuRef.current && !plusMenuRef.current.contains(e.target as Node)) setPlusMenuOpen(false);
-		};
-		document.addEventListener("mousedown", close);
-		return () => document.removeEventListener("mousedown", close);
-	}, [plusMenuOpen]);
+	useClickOutside([switcherRef], switcherOpen, () => setSwitcherOpen(false));
+	useClickOutside([plusMenuRef], plusMenuOpen, () => setPlusMenuOpen(false));
 
 	const commitName = () => {
 		setEditingName(false);
@@ -183,10 +169,7 @@ export function SidebarHeader({
 							<button
 								type="button"
 								className="w-full px-3 py-2 text-left text-sm text-text-muted hover:bg-surface-hover hover:text-[var(--color-text)]"
-								onClick={() => {
-									setEditingName(true);
-									setSwitcherOpen(false);
-								}}
+								onClick={startEditingName}
 							>
 								Rename current database
 							</button>
