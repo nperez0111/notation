@@ -18,9 +18,10 @@ export type PropertyType =
 	| "time"
 	| "checkbox";
 
-/** A property definition shared across all documents (label + type). */
+/** A property definition for a single collection (label + type). */
 export type Property = {
 	id: number;
+	collectionId: number;
 	label: string;
 	type: PropertyType;
 };
@@ -140,9 +141,12 @@ export type DocumentRPC = {
 				response: Document | null;
 			};
 			deleteDocument: { params: { id: number }; response: { success: boolean } };
-			getPropertyDefinitions: { params: {}; response: Property[] };
+			getPropertyDefinitions: {
+				params: { collectionId: number };
+				response: Property[];
+			};
 			createPropertyDefinition: {
-				params: { label: string; type: PropertyType };
+				params: { collectionId: number; label: string; type: PropertyType };
 				response: Property;
 			};
 			updatePropertyDefinition: {

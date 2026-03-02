@@ -56,7 +56,7 @@ const docColumns =
 	"id, title, created_at as createdAt, updated_at as updatedAt, created_by as createdBy, updated_by as updatedBy, content, properties, collection_id as collectionId, parent_id as parentId, icon";
 const collColumns =
 	"id, name, created_at as createdAt, updated_at as updatedAt";
-const propColumns = "id, label, type";
+const propColumns = "id, collection_id as collectionId, label, type";
 
 type DbState = {
 	db: Database.Database;
@@ -72,7 +72,7 @@ type DbState = {
 	insertDocument: ReturnType<Database.Database["prepare"]>;
 	updateDocumentStmt: ReturnType<Database.Database["prepare"]>;
 	deleteDocumentStmt: ReturnType<Database.Database["prepare"]>;
-	getAllProperties: ReturnType<Database.Database["prepare"]>;
+	getPropertiesByCollection: ReturnType<Database.Database["prepare"]>;
 	getPropertyById: ReturnType<Database.Database["prepare"]>;
 	insertProperty: ReturnType<Database.Database["prepare"]>;
 	updatePropertyStmt: ReturnType<Database.Database["prepare"]>;
@@ -83,6 +83,7 @@ type DbState = {
 const INIT_SCHEMA = `
   CREATE TABLE IF NOT EXISTS property_definitions (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
+    collection_id INTEGER NOT NULL REFERENCES collections(id),
     label TEXT NOT NULL,
     type TEXT NOT NULL CHECK (type IN ('string', 'number', 'date', 'time', 'checkbox')),
     position INTEGER NOT NULL DEFAULT 0
@@ -123,6 +124,13 @@ function createDbState(dbDirectory: string): DbState {
 	} catch {
 		// Column already exists
 	}
+	// Migration: property_definitions per collection (add collection_id, backfill, then enforce).
+	try {
+		db.exec("ALTER TABLE property_definitions ADD COLUMN collection_id INTEGER REFERENCES collections(id)");
+		db.exec("UPDATE property_definitions SET collection_id = (SELECT id FROM collections LIMIT 1) WHERE collection_id IS NULL");
+	} catch {
+		// Column already exists (new schema)
+	}
 
 	if (!(db.query("SELECT id FROM collections LIMIT 1").get() as unknown)) {
 		db.exec("INSERT INTO collections (name) VALUES ('Default')");
@@ -158,14 +166,14 @@ function createDbState(dbDirectory: string): DbState {
 			`UPDATE documents SET title = COALESCE(?, title), content = COALESCE(?, content), updated_by = ?, updated_at = datetime('now'), properties = COALESCE(?, properties), collection_id = COALESCE(?, collection_id), parent_id = ?, icon = ? WHERE id = ? RETURNING ${docColumns}`,
 		),
 		deleteDocumentStmt: db.prepare("DELETE FROM documents WHERE id = ?"),
-		getAllProperties: db.prepare(
-			`SELECT ${propColumns} FROM property_definitions ORDER BY position ASC, id ASC`,
+		getPropertiesByCollection: db.prepare(
+			`SELECT ${propColumns} FROM property_definitions WHERE collection_id = ? ORDER BY position ASC, id ASC`,
 		),
 		getPropertyById: db.prepare(
 			`SELECT ${propColumns} FROM property_definitions WHERE id = ?`,
 		),
 		insertProperty: db.prepare(
-			`INSERT INTO property_definitions (label, type) VALUES (?, ?) RETURNING ${propColumns}`,
+			`INSERT INTO property_definitions (collection_id, label, type) VALUES (?, ?, ?) RETURNING ${propColumns}`,
 		),
 		updatePropertyStmt: db.prepare(
 			`UPDATE property_definitions SET label = COALESCE(?, label), type = COALESCE(?, type) WHERE id = ? RETURNING ${propColumns}`,
@@ -221,6 +229,7 @@ const documentRPC = BrowserView.defineRPC<DocumentRPC>({
 				} else {
 					dbState.db.prepare("DELETE FROM documents WHERE collection_id = ?").run(id);
 				}
+				dbState.db.prepare("DELETE FROM property_definitions WHERE collection_id = ?").run(id);
 				dbState.deleteCollectionStmt.run(id);
 				return { success: true };
 			},
@@ -284,9 +293,10 @@ const documentRPC = BrowserView.defineRPC<DocumentRPC>({
 				dbState.deleteDocumentStmt.run(id);
 				return { success: true };
 			},
-			getPropertyDefinitions: () => dbState.getAllProperties.all() as Property[],
-			createPropertyDefinition: ({ label, type }) =>
-				dbState.insertProperty.get(label, type) as Property,
+			getPropertyDefinitions: ({ collectionId }) =>
+				dbState.getPropertiesByCollection.all(collectionId) as Property[],
+			createPropertyDefinition: ({ collectionId, label, type }) =>
+				dbState.insertProperty.get(collectionId, label, type) as Property,
 			updatePropertyDefinition: ({ id, label, type }) => {
 				const row = dbState.getPropertyById.get(id) as Property | undefined;
 				if (!row) return null;

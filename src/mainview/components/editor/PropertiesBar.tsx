@@ -487,7 +487,7 @@ export function PropertiesBar({
 	};
 
 	const handleDelete = async (id: number) => {
-		if (confirm("Remove this property from all documents?")) {
+		if (confirm("Remove this property from this collection?")) {
 			await onDeleteProperty(id);
 		}
 	};

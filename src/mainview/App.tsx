@@ -27,15 +27,14 @@ export default function App() {
 		setLoading(true);
 		setSelectedId(null);
 		setCurrentDoc(null);
+		setPropertyDefinitions([]);
 		Promise.all([
 			rpc.getCollections({}),
 			rpc.getDocuments({}),
-			rpc.getPropertyDefinitions({}),
 			rpc.getSettings({}),
-		]).then(([colls, list, defs, s]) => {
+		]).then(([colls, list, s]) => {
 			setCollections(colls);
 			setDocuments(list);
-			setPropertyDefinitions(defs);
 			setSettings(s);
 			if (s.sidebarWidth != null) setSidebarWidth(s.sidebarWidth);
 			setLoading(false);
@@ -65,10 +64,19 @@ export default function App() {
 		[rpc],
 	);
 
-	// Bootstrap: collections, document list, property definitions, and initial selection.
+	// Bootstrap: collections, document list, and initial selection.
 	useEffect(() => {
 		refetchFromDatabase();
 	}, [refetchFromDatabase]);
+
+	// Load property definitions for the current document's collection.
+	useEffect(() => {
+		if (!currentDoc) {
+			setPropertyDefinitions([]);
+			return;
+		}
+		rpc.getPropertyDefinitions({ collectionId: currentDoc.collectionId }).then(setPropertyDefinitions);
+	}, [currentDoc?.id, currentDoc?.collectionId, rpc]);
 
 	// When user selects a document, load it (no useEffect: run in the callback).
 	const onSelectDocument = useCallback(
@@ -178,10 +186,15 @@ export default function App() {
 
 	const onCreateProperty = useCallback(
 		async (label: string, type: Property["type"]) => {
-			const created = await rpc.createPropertyDefinition({ label, type });
+			if (currentDoc == null) return;
+			const created = await rpc.createPropertyDefinition({
+				collectionId: currentDoc.collectionId,
+				label,
+				type,
+			});
 			setPropertyDefinitions((prev) => [...prev, created]);
 		},
-		[rpc],
+		[rpc, currentDoc],
 	);
 	const onUpdateProperty = useCallback(
 		async (id: number, label?: string, type?: Property["type"]) => {
