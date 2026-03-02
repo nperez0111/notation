@@ -30,7 +30,7 @@ export function EmojiMartPickerPanel({
 	if (!ready) {
 		return (
 			<div
-				className="flex h-[320px] w-[352px] items-center justify-center text-text-subtle"
+				className="flex h-[320px] min-w-0 w-full items-center justify-center text-text-subtle"
 				onClick={(e) => e.stopPropagation()}
 			>
 				Loading emojis…
@@ -40,7 +40,7 @@ export function EmojiMartPickerPanel({
 
 	return (
 		<div
-			className="h-[320px] w-[352px] overflow-hidden"
+			className="h-[320px] min-w-0 w-full overflow-hidden"
 			onClick={(e) => e.stopPropagation()}
 			style={{ position: "relative" }}
 		>

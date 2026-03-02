@@ -1,8 +1,8 @@
 import { useState, useRef, useEffect } from "react";
 import { draggable, dropTargetForElements } from "@atlaskit/pragmatic-drag-and-drop/element/adapter";
-import { useClickOutside } from "../../hooks/useClickOutside";
 import type { Collection, Document } from "../../../shared/types";
 import { Button } from "baseui/button";
+import { StatefulPopover } from "baseui/popover";
 import { DocumentListItem } from "./DocumentListItem";
 import {
 	buildDocumentTree,
@@ -234,12 +234,23 @@ export function CollectionSection({
 	onReparentDocument,
 }: CollectionSectionProps) {
 	const [expanded, setExpanded] = useState(true);
-	const [menuOpen, setMenuOpen] = useState(false);
 	const [editingName, setEditingName] = useState(false);
 	const [editValue, setEditValue] = useState(collection.name);
 	const [activeDrop, setActiveDrop] = useState<DropData | null>(null);
-	const menuRef = useRef<HTMLDivElement>(null);
 	const inputRef = useRef<HTMLInputElement>(null);
+
+	const sidebarPopoverOverrides = {
+		Body: {
+			style: {
+				borderRadius: "8px",
+				boxShadow: "0 4px 12px rgba(0,0,0,0.4)",
+				backgroundColor: "var(--color-surface)",
+				border: "1px solid var(--color-border)",
+				minWidth: "120px",
+			},
+		},
+		Inner: { style: {} },
+	};
 
 	const byParent = buildDocumentTree(documents, collection.id);
 	const roots = getRootDocuments(byParent);
@@ -247,7 +258,6 @@ export function CollectionSection({
 	const startEditingName = () => {
 		setEditValue(collection.name);
 		setEditingName(true);
-		setMenuOpen(false);
 	};
 
 	// Focus input when entering rename mode
@@ -258,15 +268,12 @@ export function CollectionSection({
 		}
 	}, [editingName]);
 
-	useClickOutside([menuRef], menuOpen, () => setMenuOpen(false));
-
 	const submitRename = () => {
 		const trimmed = editValue.trim();
 		if (trimmed && trimmed !== collection.name && onRenameCollection) {
 			onRenameCollection(collection.id, trimmed);
 		}
 		setEditingName(false);
-		setMenuOpen(false);
 	};
 
 	return (
@@ -296,7 +303,6 @@ export function CollectionSection({
 								if (e.key === "Escape") {
 									setEditValue(collection.name);
 									setEditingName(false);
-									setMenuOpen(false);
 								}
 							}}
 							className="min-w-0 flex-1 rounded bg-[var(--color-bg)] px-1.5 py-0.5 text-inherit outline-none ring-1 ring-border focus:ring-accent"
@@ -307,33 +313,34 @@ export function CollectionSection({
 					)}
 				</button>
 				{onRenameCollection && !editingName && (
-					<div className="relative shrink-0" ref={menuRef}>
-						<button
-							type="button"
-							onClick={() => setMenuOpen((o) => !o)}
-							className="rounded p-1 text-text-muted hover:bg-surface-hover hover:text-[var(--color-text)]"
-							aria-label="Collection menu"
-							aria-expanded={menuOpen}
-							aria-haspopup="true"
-						>
-							⋯
-						</button>
-						{menuOpen && (
-							<div
-								className="absolute right-0 top-full z-10 mt-0.5 min-w-[120px] rounded-lg border border-border bg-surface py-1 shadow-lg"
-								role="menu"
-							>
+					<StatefulPopover
+						placement="bottomRight"
+						content={({ close }) => (
+							<div className="py-1" role="menu">
 								<button
 									type="button"
 									role="menuitem"
 									className="w-full px-3 py-2 text-left text-sm text-[var(--color-text)] hover:bg-surface-hover"
-									onClick={startEditingName}
+									onClick={() => {
+										startEditingName();
+										close();
+									}}
 								>
 									Rename
 								</button>
 							</div>
 						)}
-					</div>
+						overrides={sidebarPopoverOverrides}
+					>
+						<button
+							type="button"
+							className="shrink-0 rounded p-1 text-text-muted hover:bg-surface-hover hover:text-[var(--color-text)]"
+							aria-label="Collection menu"
+							aria-haspopup="true"
+						>
+							⋯
+						</button>
+					</StatefulPopover>
 				)}
 			</div>
 			{expanded && (

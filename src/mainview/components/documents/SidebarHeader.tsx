@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import type { SettingsInfo } from "../../../shared/types";
-import { useClickOutside } from "../../hooks/useClickOutside";
+import { StatefulPopover } from "baseui/popover";
 
 type SidebarHeaderProps = {
 	settings: SettingsInfo | null;
@@ -34,14 +34,25 @@ export function SidebarHeader({
 	onCreatePage,
 	onDatabaseMetadataChange,
 }: SidebarHeaderProps) {
-	const [switcherOpen, setSwitcherOpen] = useState(false);
-	const [plusMenuOpen, setPlusMenuOpen] = useState(false);
 	const [editingName, setEditingName] = useState(false);
 	const [nameDraft, setNameDraft] = useState("");
-	const switcherRef = useRef<HTMLDivElement>(null);
-	const plusMenuRef = useRef<HTMLDivElement>(null);
 	const nameInputRef = useRef<HTMLInputElement>(null);
 	const fileInputRef = useRef<HTMLInputElement>(null);
+
+	const sidebarPopoverOverrides = {
+		Body: {
+			style: {
+				borderRadius: "8px",
+				boxShadow: "0 4px 12px rgba(0,0,0,0.4)",
+				backgroundColor: "var(--color-surface)",
+				border: "1px solid var(--color-border)",
+				minWidth: "180px",
+				maxHeight: "224px",
+				overflow: "auto",
+			},
+		},
+		Inner: { style: {} },
+	};
 
 	const dbName = !settings
 		? "Database"
@@ -52,15 +63,12 @@ export function SidebarHeader({
 	const startEditingName = () => {
 		setNameDraft(dbName);
 		setEditingName(true);
-		setSwitcherOpen(false);
 	};
 
 	useEffect(() => {
 		if (editingName) nameInputRef.current?.focus();
 	}, [editingName]);
 
-	useClickOutside([switcherRef], switcherOpen, () => setSwitcherOpen(false));
-	useClickOutside([plusMenuRef], plusMenuOpen, () => setPlusMenuOpen(false));
 
 	const commitName = () => {
 		setEditingName(false);
@@ -109,91 +117,80 @@ export function SidebarHeader({
 					aria-hidden
 				/>
 
-				{/* Database name + switcher */}
-				<div className="relative min-w-0 flex-1" ref={switcherRef}>
-					<div className="flex items-center gap-0.5 rounded-lg hover:bg-surface-hover">
-						{editingName ? (
-							<input
-								ref={nameInputRef}
-								type="text"
-								value={nameDraft}
-								onChange={(e) => setNameDraft(e.target.value)}
-								onBlur={commitName}
-								onKeyDown={(e) => {
-									if (e.key === "Enter") commitName();
-									if (e.key === "Escape") {
-										setNameDraft(dbName);
-										setEditingName(false);
-									}
-								}}
-								className="min-w-0 flex-1 rounded bg-[var(--color-bg)] px-2 py-1 text-sm font-medium text-[var(--color-text)] outline-none ring-1 ring-border focus:ring-accent"
-								aria-label="Database name"
-							/>
-						) : (
+				{/* Database name + switcher (popover portalled so it can overflow sidebar) */}
+				<div className="min-w-0 flex-1">
+					{editingName ? (
+						<input
+							ref={nameInputRef}
+							type="text"
+							value={nameDraft}
+							onChange={(e) => setNameDraft(e.target.value)}
+							onBlur={commitName}
+							onKeyDown={(e) => {
+								if (e.key === "Enter") commitName();
+								if (e.key === "Escape") {
+									setNameDraft(dbName);
+									setEditingName(false);
+								}
+							}}
+							className="min-w-0 w-full rounded bg-[var(--color-bg)] px-2 py-1 text-sm font-medium text-[var(--color-text)] outline-none ring-1 ring-border focus:ring-accent"
+							aria-label="Database name"
+						/>
+					) : (
+						<StatefulPopover
+							placement="bottomLeft"
+							content={({ close }) => (
+								<div className="py-1" role="listbox">
+									{recent.length === 0 ? (
+										<div className="px-3 py-2 text-sm text-text-muted">No recent databases</div>
+									) : (
+										recent.map(({ directory, name }) => (
+											<button
+												key={directory}
+												type="button"
+												role="option"
+												className={`flex w-full items-center gap-2 truncate px-3 py-2 text-left text-sm ${directory === settings?.dbDirectory ? "bg-accent-muted text-accent-text" : "text-[var(--color-text)] hover:bg-surface-hover"}`}
+												onClick={() => {
+													if (directory !== settings?.dbDirectory) onSwitchDatabase(directory);
+													close();
+												}}
+											>
+												<span className="min-w-0 truncate">{name}</span>
+											</button>
+										))
+									)}
+									<button
+										type="button"
+										className="w-full px-3 py-2 text-left text-sm text-text-muted hover:bg-surface-hover hover:text-[var(--color-text)]"
+										onClick={() => {
+											startEditingName();
+											close();
+										}}
+									>
+										Rename current database
+									</button>
+								</div>
+							)}
+							overrides={sidebarPopoverOverrides}
+						>
 							<button
 								type="button"
-								onClick={() => setSwitcherOpen((o) => !o)}
-								className="flex min-w-0 flex-1 items-center gap-1 rounded px-2 py-1.5 text-left text-sm font-medium text-[var(--color-text)]"
+								className="flex min-w-0 flex-1 items-center gap-1 rounded px-2 py-1.5 text-left text-sm font-medium text-[var(--color-text)] hover:bg-surface-hover w-full"
 								title={settings?.dbPath}
-								aria-expanded={switcherOpen}
 								aria-haspopup="listbox"
 							>
 								<span className="min-w-0 flex-1 truncate">{dbName}</span>
-								<ChevronDownIcon className={`shrink-0 text-text-muted transition-transform ${switcherOpen ? "rotate-180" : ""}`} />
+								<ChevronDownIcon className="shrink-0 text-text-muted" />
 							</button>
-						)}
-					</div>
-					{switcherOpen && !editingName && (
-						<div
-							className="absolute z-20 mt-0.5 max-h-56 min-w-[180px] overflow-auto rounded-lg border border-border bg-surface py-1 shadow-lg"
-							role="listbox"
-						>
-							{recent.length === 0 ? (
-								<div className="px-3 py-2 text-sm text-text-muted">No recent databases</div>
-							) : (
-								recent.map(({ directory, name }) => (
-									<button
-										key={directory}
-										type="button"
-										role="option"
-										className={`flex w-full items-center gap-2 truncate px-3 py-2 text-left text-sm ${directory === settings?.dbDirectory ? "bg-accent-muted text-accent-text" : "text-[var(--color-text)] hover:bg-surface-hover"}`}
-										onClick={() => {
-											if (directory !== settings?.dbDirectory) onSwitchDatabase(directory);
-											setSwitcherOpen(false);
-										}}
-									>
-										<span className="min-w-0 truncate">{name}</span>
-									</button>
-								))
-							)}
-							<button
-								type="button"
-								className="w-full px-3 py-2 text-left text-sm text-text-muted hover:bg-surface-hover hover:text-[var(--color-text)]"
-								onClick={startEditingName}
-							>
-								Rename current database
-							</button>
-						</div>
+						</StatefulPopover>
 					)}
 				</div>
 
-				{/* Plus menu */}
-				<div className="relative shrink-0" ref={plusMenuRef}>
-					<button
-						type="button"
-						onClick={() => setPlusMenuOpen((o) => !o)}
-						className="flex h-8 w-8 items-center justify-center rounded-lg text-text-muted hover:bg-surface-hover hover:text-[var(--color-text)]"
-						aria-label="Create new"
-						aria-expanded={plusMenuOpen}
-						aria-haspopup="menu"
-					>
-						<PlusIcon />
-					</button>
-					{plusMenuOpen && (
-						<div
-							className="absolute left-0 top-full z-20 mt-0.5 min-w-[160px] rounded-lg border border-border bg-surface py-1 shadow-lg"
-							role="menu"
-						>
+				{/* Plus menu (popover portalled so it can overflow sidebar) */}
+				<StatefulPopover
+					placement="bottomRight"
+					content={({ close }) => (
+						<div className="min-w-[160px] py-1" role="menu">
 							{onCreatePage && (
 								<button
 									type="button"
@@ -201,7 +198,7 @@ export function SidebarHeader({
 									className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-[var(--color-text)] hover:bg-surface-hover"
 									onClick={() => {
 										onCreatePage();
-										setPlusMenuOpen(false);
+										close();
 									}}
 								>
 									New page
@@ -214,7 +211,7 @@ export function SidebarHeader({
 									className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-[var(--color-text)] hover:bg-surface-hover"
 									onClick={() => {
 										onCreateCollection();
-										setPlusMenuOpen(false);
+										close();
 									}}
 								>
 									New collection
@@ -222,7 +219,17 @@ export function SidebarHeader({
 							)}
 						</div>
 					)}
-				</div>
+					overrides={sidebarPopoverOverrides}
+				>
+					<button
+						type="button"
+						className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-text-muted hover:bg-surface-hover hover:text-[var(--color-text)]"
+						aria-label="Create new"
+						aria-haspopup="menu"
+					>
+						<PlusIcon />
+					</button>
+				</StatefulPopover>
 			</div>
 		</div>
 	);
