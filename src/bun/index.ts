@@ -12,7 +12,7 @@ import type {
 	SettingsInfo,
 } from "../shared/types";
 import Database from "bun:sqlite";
-import { join } from "path";
+import { join, basename } from "path";
 import { existsSync, mkdirSync, copyFileSync, readFileSync } from "fs";
 import { execSync } from "child_process";
 
@@ -29,7 +29,12 @@ function getSettingsPath(): string {
 	return join(dataDir, SETTINGS_FILE);
 }
 
-type SettingsJson = { dbDirectory?: string };
+type SettingsJson = {
+	dbDirectory?: string;
+	databaseName?: string;
+	databaseIcon?: string; // base64 data URL or empty
+	recentDbDirectories?: string[];
+};
 
 function loadSettings(): SettingsJson {
 	const path = getSettingsPath();
@@ -329,10 +334,20 @@ const documentRPC = BrowserView.defineRPC<DocumentRPC>({
 			},
 			getSettings: (): SettingsInfo => {
 				const count = (dbState.db.query("SELECT COUNT(*) as c FROM documents").get() as { c: number }).c;
+				const s = loadSettings();
+				const dbName = s.databaseName ?? basename(dbState.dbDirectory);
+				const recentRaw = (s.recentDbDirectories ?? []).filter((d) => d !== dbState.dbDirectory);
+				const recent = [dbState.dbDirectory, ...recentRaw].slice(0, 10);
 				return {
 					dbPath: dbState.dbPath,
 					dbDirectory: dbState.dbDirectory,
 					documentCount: count,
+					databaseName: dbName,
+					databaseIcon: s.databaseIcon ?? null,
+					recentDatabases: recent.map((dir) => ({
+						directory: dir,
+						name: dir === dbState.dbDirectory && s.databaseName ? s.databaseName : basename(dir),
+					})),
 				};
 			},
 			chooseDatabaseDirectory: (): string | null => {
@@ -360,7 +375,24 @@ const documentRPC = BrowserView.defineRPC<DocumentRPC>({
 				if (mode === "move" && existsSync(dbState.dbPath)) {
 					copyFileSync(dbState.dbPath, newDbPath);
 				}
-				saveSettings({ dbDirectory: directory });
+				const s = loadSettings();
+				const recent = [directory, ...(s.recentDbDirectories ?? []).filter((d) => d !== directory)].slice(0, 10);
+				saveSettings({ ...s, dbDirectory: directory, recentDbDirectories: recent });
+				return { success: true };
+			},
+			setDatabaseMetadata: ({
+				name,
+				icon,
+			}: {
+				name?: string;
+				icon?: string | null;
+			}) => {
+				const s = loadSettings();
+				saveSettings({
+					...s,
+					databaseName: name !== undefined ? name : s.databaseName,
+					databaseIcon: icon !== undefined ? (icon || undefined) : s.databaseIcon,
+				});
 				return { success: true };
 			},
 			reloadDatabase: () => ({ success: reloadDatabase() }),

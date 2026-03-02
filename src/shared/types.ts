@@ -84,6 +84,12 @@ export type SettingsInfo = {
 	dbPath: string;
 	dbDirectory: string;
 	documentCount: number;
+	/** Display name for the current database (defaults to folder name). */
+	databaseName?: string;
+	/** Optional database icon as data URL (e.g. uploaded image). */
+	databaseIcon?: string | null;
+	/** Recently opened database directories for switcher. */
+	recentDatabases?: { directory: string; name: string }[];
 };
 
 /**
@@ -153,6 +159,10 @@ export type DocumentRPC = {
 			chooseDatabaseDirectory: { params: {}; response: string | null };
 			setDatabaseLocation: {
 				params: { directory: string; mode: "new" | "move" };
+				response: { success: boolean };
+			};
+			setDatabaseMetadata: {
+				params: { name?: string; icon?: string | null };
 				response: { success: boolean };
 			};
 			reloadDatabase: { params: {}; response: { success: boolean } };

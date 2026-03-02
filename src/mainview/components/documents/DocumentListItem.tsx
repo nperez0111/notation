@@ -42,7 +42,7 @@ export function DocumentListItem({
 	const indent = depth * DEPTH_PADDING;
 
 	return (
-		<li
+		<div
 			className="group relative flex min-w-0 items-center gap-0 overflow-hidden"
 			style={hasChildren ? { paddingLeft: indent } : undefined}
 		>
@@ -127,6 +127,6 @@ export function DocumentListItem({
 					+
 				</button>
 			)}
-		</li>
+		</div>
 	);
 }

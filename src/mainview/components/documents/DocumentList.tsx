@@ -10,6 +10,7 @@ type DocumentListProps = {
 	onCreateCollection?: () => void;
 	onRenameCollection?: (id: number, name: string) => void;
 	onIconChange?: (documentId: number, icon: Document["icon"]) => void;
+	onReparentDocument?: (documentId: number, collectionId: number, parentId: number | null) => void;
 };
 
 export function DocumentList({
@@ -21,20 +22,10 @@ export function DocumentList({
 	onCreateCollection,
 	onRenameCollection,
 	onIconChange,
+	onReparentDocument,
 }: DocumentListProps) {
 	return (
 		<>
-			<div className="flex flex-col gap-1 border-b border-border p-3">
-				{onCreateCollection && (
-					<button
-						type="button"
-						onClick={onCreateCollection}
-						className="rounded-lg px-3 py-2 text-left text-sm font-medium text-text-muted hover:bg-surface-hover hover:text-[var(--color-text)]"
-					>
-						+ New collection
-					</button>
-				)}
-			</div>
 			<ul className="flex-1 overflow-auto py-2" role="list">
 				{collections.map((coll) => (
 					<li key={coll.id}>
@@ -46,6 +37,7 @@ export function DocumentList({
 							onCreateDocument={onCreateDocument}
 							onRenameCollection={onRenameCollection}
 							onIconChange={onIconChange}
+							onReparentDocument={onReparentDocument}
 						/>
 					</li>
 				))}

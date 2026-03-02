@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useRpc } from "./electroview";
 import { useTheme } from "./themeContext";
-import type { Collection, Document, Property } from "../shared/types";
+import type { Collection, Document, Property, SettingsInfo } from "../shared/types";
 import { DocumentSidebar } from "./components/documents/DocumentSidebar";
 import { DocumentEditor } from "./components/editor/DocumentEditor";
 import { SettingsModal } from "./components/settings/SettingsModal";
@@ -20,6 +20,7 @@ export default function App() {
 	const [currentDoc, setCurrentDoc] = useState<Document | null>(null);
 	const [loading, setLoading] = useState(true);
 	const [settingsOpen, setSettingsOpen] = useState(false);
+	const [settings, setSettings] = useState<SettingsInfo | null>(null);
 
 	const refetchFromDatabase = useCallback(() => {
 		setLoading(true);
@@ -29,10 +30,12 @@ export default function App() {
 			rpc.getCollections({}),
 			rpc.getDocuments({}),
 			rpc.getPropertyDefinitions({}),
-		]).then(([colls, list, defs]) => {
+			rpc.getSettings({}),
+		]).then(([colls, list, defs, s]) => {
 			setCollections(colls);
 			setDocuments(list);
 			setPropertyDefinitions(defs);
+			setSettings(s);
 			setLoading(false);
 			if (list.length > 0) {
 				const firstId = list[0].id;
@@ -41,6 +44,24 @@ export default function App() {
 			}
 		});
 	}, [rpc]);
+
+	const onSwitchDatabase = useCallback(
+		async (directory: string) => {
+			await rpc.setDatabaseLocation({ directory, mode: "new" });
+			await rpc.reloadDatabase({});
+			refetchFromDatabase();
+		},
+		[rpc, refetchFromDatabase],
+	);
+
+	const onDatabaseMetadataChange = useCallback(
+		async (name?: string, icon?: string | null) => {
+			await rpc.setDatabaseMetadata({ name, icon });
+			const s = await rpc.getSettings({});
+			setSettings(s);
+		},
+		[rpc],
+	);
 
 	// Bootstrap: collections, document list, property definitions, and initial selection.
 	useEffect(() => {
@@ -135,6 +156,24 @@ export default function App() {
 		[rpc],
 	);
 
+	const onReparentDocument = useCallback(
+		async (documentId: number, collectionId: number, parentId: number | null) => {
+			const updated = await rpc.updateDocument({
+				id: documentId,
+				collectionId,
+				parentId,
+				updatedBy: DEFAULT_USER,
+			});
+			if (!updated) return;
+			const next: Document = { ...updated, updatedAt: updated.updatedAt ?? new Date().toISOString() };
+			setCurrentDoc((prev) => (prev?.id === documentId ? next : prev));
+			setDocuments((prev) =>
+				prev.map((d) => (d.id === documentId ? next : d)),
+			);
+		},
+		[rpc],
+	);
+
 	const onCreateProperty = useCallback(
 		async (label: string, type: Property["type"]) => {
 			const created = await rpc.createPropertyDefinition({ label, type });
@@ -173,6 +212,7 @@ export default function App() {
 	return (
 		<div className="flex min-h-screen bg-[var(--color-surface-elevated)] text-[var(--color-text)]">
 			<DocumentSidebar
+				settings={settings}
 				collections={collections}
 				documents={documents}
 				selectedId={selectedId}
@@ -181,7 +221,10 @@ export default function App() {
 				onCreateCollection={onCreateCollection}
 				onRenameCollection={onRenameCollection}
 				onIconChange={onIconChange}
+				onReparentDocument={onReparentDocument}
 				onOpenSettings={() => setSettingsOpen(true)}
+				onSwitchDatabase={onSwitchDatabase}
+				onDatabaseMetadataChange={onDatabaseMetadataChange}
 			/>
 			<SettingsModal
 				isOpen={settingsOpen}

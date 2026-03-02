@@ -28,3 +28,21 @@ export function getChildDocuments(
 ) {
 	return byParent.get(parentId) ?? [];
 }
+
+/** Collect all descendant document ids under a given document (for drag-drop cycle prevention). */
+export function getDescendantIds(
+	byParent: Map<number | null, Document[]>,
+	parentId: number,
+): Set<number> {
+	const out = new Set<number>();
+	const stack = [parentId];
+	while (stack.length > 0) {
+		const id = stack.pop()!;
+		const children = byParent.get(id) ?? [];
+		for (const c of children) {
+			out.add(c.id);
+			stack.push(c.id);
+		}
+	}
+	return out;
+}

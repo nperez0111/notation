@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from "react";
+import { draggable, dropTargetForElements } from "@atlaskit/pragmatic-drag-and-drop/element/adapter";
 import type { Collection, Document } from "../../../shared/types";
 import { Button } from "baseui/button";
 import { DocumentListItem } from "./DocumentListItem";
@@ -6,7 +7,10 @@ import {
 	buildDocumentTree,
 	getRootDocuments,
 	getChildDocuments,
+	getDescendantIds,
 } from "./documentTree";
+
+const DEPTH_PADDING = 12;
 
 type CollectionSectionProps = {
 	collection: Collection;
@@ -16,7 +20,75 @@ type CollectionSectionProps = {
 	onCreateDocument: (collectionId: number, parentId?: number | null) => void;
 	onRenameCollection?: (id: number, name: string) => void;
 	onIconChange?: (documentId: number, icon: Document["icon"]) => void;
+	onReparentDocument?: (documentId: number, collectionId: number, parentId: number | null) => void;
 };
+
+type DropData = { key: string; collectionId: number; parentId: number | null; indent: number; edge: "top" | "bottom" };
+
+function SidebarDropStrip({
+	dropKey,
+	collectionId,
+	parentId,
+	indent,
+	edge,
+	activeDrop,
+	setActiveDrop,
+	canDrop,
+	onDrop,
+	children,
+}: {
+	dropKey: string;
+	collectionId: number;
+	parentId: number | null;
+	indent: number;
+	edge: "top" | "bottom";
+	activeDrop: DropData | null;
+	setActiveDrop: (d: DropData | null) => void;
+	canDrop: (source: { data: Record<string, unknown> }) => boolean;
+	onDrop: (documentId: number) => void;
+	children?: React.ReactNode;
+}) {
+	const ref = useRef<HTMLDivElement>(null);
+	useEffect(() => {
+		const el = ref.current;
+		if (!el) return;
+		return dropTargetForElements({
+			element: el,
+			getData: () => ({ type: "sidebar-drop" as const, dropKey, collectionId, parentId, indent }),
+			canDrop,
+			getIsSticky: () => true,
+			onDragEnter: () => setActiveDrop({ key: dropKey, collectionId, parentId, indent, edge }),
+			onDragLeave: () => setActiveDrop(null),
+			onDrop: ({ source }) => {
+				const data = source.data as { type?: string; documentId?: number };
+				if (data.type === "sidebar-doc" && typeof data.documentId === "number") {
+					onDrop(data.documentId);
+				}
+				setActiveDrop(null);
+			},
+		});
+	}, [dropKey, collectionId, parentId, indent, edge, canDrop, onDrop, setActiveDrop]);
+
+	const isActive = activeDrop?.key === dropKey;
+	return (
+		<div
+			ref={ref}
+			className="relative min-h-[6px] shrink-0"
+		>
+			{isActive && (
+				<div
+					className="absolute left-0 right-0 z-10 h-0.5 bg-[var(--color-accent)]"
+					style={{
+						...(edge === "bottom" ? { bottom: 0, top: "auto" } : { top: 0 }),
+						...(indent > 0 ? { left: indent * DEPTH_PADDING } : {}),
+					}}
+					aria-hidden
+				/>
+			)}
+			{children}
+		</div>
+	);
+}
 
 function DocumentTreeItem({
 	doc,
@@ -27,6 +99,9 @@ function DocumentTreeItem({
 	onSelect,
 	onCreateDocument,
 	onIconChange,
+	onReparentDocument,
+	activeDrop,
+	setActiveDrop,
 }: {
 	doc: Document;
 	depth: number;
@@ -36,25 +111,95 @@ function DocumentTreeItem({
 	onSelect: (id: number) => void;
 	onCreateDocument: (collectionId: number, parentId?: number | null) => void;
 	onIconChange?: (documentId: number, icon: Document["icon"]) => void;
+	onReparentDocument?: (documentId: number, collectionId: number, parentId: number | null) => void;
+	activeDrop: DropData | null;
+	setActiveDrop: (d: DropData | null) => void;
 }) {
 	const children = getChildDocuments(byParent, doc.id);
 	const [expanded, setExpanded] = useState(true);
+	const rowRef = useRef<HTMLDivElement>(null);
+	const descendantIds = getDescendantIds(byParent, doc.id);
+
+	useEffect(() => {
+		const el = rowRef.current;
+		if (!el || !onReparentDocument) return;
+		return draggable({
+			element: el,
+			getInitialData: () => ({ type: "sidebar-doc" as const, documentId: doc.id, collectionId }),
+		});
+	}, [doc.id, collectionId, onReparentDocument]);
+
+	const handleReparent = (documentId: number, targetCollectionId: number, targetParentId: number | null) => {
+		onReparentDocument?.(documentId, targetCollectionId, targetParentId);
+	};
+
+	const canDropSibling = ({ source }: { source: { data: Record<string, unknown> } }) => {
+		if (source.data.type !== "sidebar-doc") return false;
+		const documentId = source.data.documentId as number;
+		return documentId !== doc.id;
+	};
+
+	const canDropChild = ({ source }: { source: { data: Record<string, unknown> } }) => {
+		if (source.data.type !== "sidebar-doc") return false;
+		const documentId = source.data.documentId as number;
+		return documentId !== doc.id && !descendantIds.has(documentId);
+	};
+
 	return (
 		<>
-			<DocumentListItem
-				document={doc}
-				isSelected={selectedId === doc.id}
-				onSelect={() => onSelect(doc.id)}
-				depth={depth}
-				onCreateChild={
-					collectionId != null
-						? () => onCreateDocument(collectionId, doc.id)
-						: undefined
-				}
-				hasChildren={children.length > 0}
-				expanded={expanded}
-				onToggleExpand={children.length > 0 ? () => setExpanded((e) => !e) : undefined}
-				onIconChange={onIconChange}
+			<SidebarDropStrip
+				dropKey={`before-${doc.id}`}
+				collectionId={collectionId}
+				parentId={doc.parentId}
+				indent={depth}
+				edge="top"
+				activeDrop={activeDrop}
+				setActiveDrop={setActiveDrop}
+				canDrop={canDropSibling}
+				onDrop={(id) => handleReparent(id, collectionId, doc.parentId)}
+			/>
+		<div
+				ref={rowRef}
+				className="list-row cursor-grab active:cursor-grabbing"
+				role="listitem"
+			>
+				<DocumentListItem
+					document={doc}
+					isSelected={selectedId === doc.id}
+					onSelect={() => onSelect(doc.id)}
+					depth={depth}
+					onCreateChild={
+						collectionId != null
+							? () => onCreateDocument(collectionId, doc.id)
+							: undefined
+					}
+					hasChildren={children.length > 0}
+					expanded={expanded}
+					onToggleExpand={children.length > 0 ? () => setExpanded((e) => !e) : undefined}
+					onIconChange={onIconChange}
+				/>
+			</div>
+			<SidebarDropStrip
+				dropKey={`child-${doc.id}`}
+				collectionId={collectionId}
+				parentId={doc.id}
+				indent={depth + 1}
+				edge="top"
+				activeDrop={activeDrop}
+				setActiveDrop={setActiveDrop}
+				canDrop={canDropChild}
+				onDrop={(id) => handleReparent(id, collectionId, doc.id)}
+			/>
+			<SidebarDropStrip
+				dropKey={`after-${doc.id}`}
+				collectionId={collectionId}
+				parentId={doc.parentId}
+				indent={depth}
+				edge="bottom"
+				activeDrop={activeDrop}
+				setActiveDrop={setActiveDrop}
+				canDrop={canDropSibling}
+				onDrop={(id) => handleReparent(id, collectionId, doc.parentId)}
 			/>
 			{expanded &&
 				children.map((child) => (
@@ -68,6 +213,9 @@ function DocumentTreeItem({
 						onSelect={onSelect}
 						onCreateDocument={onCreateDocument}
 						onIconChange={onIconChange}
+						onReparentDocument={onReparentDocument}
+						activeDrop={activeDrop}
+						setActiveDrop={setActiveDrop}
 					/>
 				))}
 		</>
@@ -82,11 +230,13 @@ export function CollectionSection({
 	onCreateDocument,
 	onRenameCollection,
 	onIconChange,
+	onReparentDocument,
 }: CollectionSectionProps) {
 	const [expanded, setExpanded] = useState(true);
 	const [menuOpen, setMenuOpen] = useState(false);
 	const [editingName, setEditingName] = useState(false);
 	const [editValue, setEditValue] = useState(collection.name);
+	const [activeDrop, setActiveDrop] = useState<DropData | null>(null);
 	const menuRef = useRef<HTMLDivElement>(null);
 	const inputRef = useRef<HTMLInputElement>(null);
 
@@ -213,7 +363,20 @@ export function CollectionSection({
 							New note
 						</Button>
 					</div>
-					<ul className="mt-1 flex flex-col gap-0.5 px-2" role="list">
+					<div className="mt-1 flex flex-col gap-0.5 px-2" role="list">
+						{onReparentDocument && (
+							<SidebarDropStrip
+								dropKey="before-first"
+								collectionId={collection.id}
+								parentId={null}
+								indent={0}
+								edge="top"
+								activeDrop={activeDrop}
+								setActiveDrop={setActiveDrop}
+								canDrop={({ source }) => source.data.type === "sidebar-doc"}
+								onDrop={(id) => onReparentDocument(id, collection.id, null)}
+							/>
+						)}
 						{roots.map((doc) => (
 							<DocumentTreeItem
 								key={doc.id}
@@ -225,9 +388,12 @@ export function CollectionSection({
 								onSelect={onSelect}
 								onCreateDocument={onCreateDocument}
 								onIconChange={onIconChange}
+								onReparentDocument={onReparentDocument}
+								activeDrop={activeDrop}
+								setActiveDrop={setActiveDrop}
 							/>
 						))}
-					</ul>
+					</div>
 				</div>
 			)}
 		</section>

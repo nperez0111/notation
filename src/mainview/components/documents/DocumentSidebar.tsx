@@ -1,8 +1,11 @@
 import type { Collection, Document } from "../../../shared/types";
+import type { SettingsInfo } from "../../../shared/types";
 import { Sidebar } from "../layout/Sidebar";
 import { DocumentList } from "./DocumentList";
+import { SidebarHeader } from "./SidebarHeader";
 
 type DocumentSidebarProps = {
+	settings: SettingsInfo | null;
 	collections: Collection[];
 	documents: Document[];
 	selectedId: number | null;
@@ -11,7 +14,10 @@ type DocumentSidebarProps = {
 	onCreateCollection?: () => void;
 	onRenameCollection?: (id: number, name: string) => void;
 	onIconChange?: (documentId: number, icon: Document["icon"]) => void;
+	onReparentDocument?: (documentId: number, collectionId: number, parentId: number | null) => void;
 	onOpenSettings?: () => void;
+	onSwitchDatabase?: (directory: string) => void;
+	onDatabaseMetadataChange?: (name?: string, icon?: string | null) => void;
 };
 
 function GearIcon({ className }: { className?: string }) {
@@ -36,6 +42,7 @@ function GearIcon({ className }: { className?: string }) {
 }
 
 export function DocumentSidebar({
+	settings,
 	collections,
 	documents,
 	selectedId,
@@ -44,10 +51,24 @@ export function DocumentSidebar({
 	onCreateCollection,
 	onRenameCollection,
 	onIconChange,
+	onReparentDocument,
 	onOpenSettings,
+	onSwitchDatabase,
+	onDatabaseMetadataChange,
 }: DocumentSidebarProps) {
 	return (
 		<Sidebar>
+			<SidebarHeader
+				settings={settings}
+				onSwitchDatabase={(dir) => onSwitchDatabase?.(dir)}
+				onCreateCollection={onCreateCollection}
+				onCreatePage={
+					collections.length > 0
+						? () => onCreateDocument(collections[0].id, null)
+						: undefined
+				}
+				onDatabaseMetadataChange={onDatabaseMetadataChange}
+			/>
 			<DocumentList
 				collections={collections}
 				documents={documents}
@@ -57,6 +78,7 @@ export function DocumentSidebar({
 				onCreateCollection={onCreateCollection}
 				onRenameCollection={onRenameCollection}
 				onIconChange={onIconChange}
+				onReparentDocument={onReparentDocument}
 			/>
 			{onOpenSettings && (
 				<div className="shrink-0 border-t border-[var(--color-border)] p-2">
