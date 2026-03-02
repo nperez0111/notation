@@ -90,6 +90,8 @@ export type SettingsInfo = {
 	databaseIcon?: string | null;
 	/** Recently opened database directories for switcher. */
 	recentDatabases?: { directory: string; name: string }[];
+	/** Sidebar width in pixels (persisted in settings). */
+	sidebarWidth?: number;
 };
 
 /**
@@ -163,6 +165,10 @@ export type DocumentRPC = {
 			};
 			setDatabaseMetadata: {
 				params: { name?: string; icon?: string | null };
+				response: { success: boolean };
+			};
+			setSidebarWidth: {
+				params: { width: number };
 				response: { success: boolean };
 			};
 			reloadDatabase: { params: {}; response: { success: boolean } };

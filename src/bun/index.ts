@@ -34,6 +34,7 @@ type SettingsJson = {
 	databaseName?: string;
 	databaseIcon?: string; // base64 data URL or empty
 	recentDbDirectories?: string[];
+	sidebarWidth?: number;
 };
 
 function loadSettings(): SettingsJson {
@@ -322,6 +323,7 @@ const documentRPC = BrowserView.defineRPC<DocumentRPC>({
 						directory: dir,
 						name: dir === dbState.dbDirectory && s.databaseName ? s.databaseName : basename(dir),
 					})),
+					sidebarWidth: s.sidebarWidth,
 				};
 			},
 			chooseDatabaseDirectory: (): string | null => {
@@ -367,6 +369,11 @@ const documentRPC = BrowserView.defineRPC<DocumentRPC>({
 					databaseName: name !== undefined ? name : s.databaseName,
 					databaseIcon: icon !== undefined ? (icon || undefined) : s.databaseIcon,
 				});
+				return { success: true };
+			},
+			setSidebarWidth: ({ width }: { width: number }) => {
+				const s = loadSettings();
+				saveSettings({ ...s, sidebarWidth: width });
 				return { success: true };
 			},
 			reloadDatabase: () => ({ success: reloadDatabase() }),

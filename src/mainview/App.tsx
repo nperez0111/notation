@@ -21,6 +21,7 @@ export default function App() {
 	const [loading, setLoading] = useState(true);
 	const [settingsOpen, setSettingsOpen] = useState(false);
 	const [settings, setSettings] = useState<SettingsInfo | null>(null);
+	const [sidebarWidth, setSidebarWidth] = useState(256);
 
 	const refetchFromDatabase = useCallback(() => {
 		setLoading(true);
@@ -36,6 +37,7 @@ export default function App() {
 			setDocuments(list);
 			setPropertyDefinitions(defs);
 			setSettings(s);
+			if (s.sidebarWidth != null) setSidebarWidth(s.sidebarWidth);
 			setLoading(false);
 			if (list.length > 0) {
 				const firstId = list[0].id;
@@ -209,6 +211,18 @@ export default function App() {
 		[rpc],
 	);
 
+	const onSidebarWidthChange = useCallback((width: number) => {
+		setSidebarWidth(width);
+	}, []);
+
+	const onSidebarWidthChangeEnd = useCallback(
+		async (width: number) => {
+			setSidebarWidth(width);
+			await rpc.setSidebarWidth({ width });
+		},
+		[rpc],
+	);
+
 	return (
 		<div className="flex h-screen overflow-hidden bg-[var(--color-surface-elevated)] text-[var(--color-text)]">
 			<DocumentSidebar
@@ -225,6 +239,9 @@ export default function App() {
 				onOpenSettings={() => setSettingsOpen(true)}
 				onSwitchDatabase={onSwitchDatabase}
 				onDatabaseMetadataChange={onDatabaseMetadataChange}
+				sidebarWidth={sidebarWidth}
+				onSidebarWidthChange={onSidebarWidthChange}
+				onSidebarWidthChangeEnd={onSidebarWidthChangeEnd}
 			/>
 			<SettingsModal
 				isOpen={settingsOpen}

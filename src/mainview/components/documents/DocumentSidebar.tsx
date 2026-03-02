@@ -4,6 +4,8 @@ import { Sidebar } from "../layout/Sidebar";
 import { DocumentList } from "./DocumentList";
 import { SidebarHeader } from "./SidebarHeader";
 
+const DEFAULT_SIDEBAR_WIDTH = 256;
+
 type DocumentSidebarProps = {
 	settings: SettingsInfo | null;
 	collections: Collection[];
@@ -18,6 +20,9 @@ type DocumentSidebarProps = {
 	onOpenSettings?: () => void;
 	onSwitchDatabase?: (directory: string) => void;
 	onDatabaseMetadataChange?: (name?: string, icon?: string | null) => void;
+	sidebarWidth?: number;
+	onSidebarWidthChange?: (width: number) => void;
+	onSidebarWidthChangeEnd?: (width: number) => void;
 };
 
 function GearIcon({ className }: { className?: string }) {
@@ -55,9 +60,16 @@ export function DocumentSidebar({
 	onOpenSettings,
 	onSwitchDatabase,
 	onDatabaseMetadataChange,
+	sidebarWidth = DEFAULT_SIDEBAR_WIDTH,
+	onSidebarWidthChange,
+	onSidebarWidthChangeEnd,
 }: DocumentSidebarProps) {
 	return (
-		<Sidebar>
+		<Sidebar
+			width={sidebarWidth}
+			onWidthChange={onSidebarWidthChange}
+			onWidthChangeEnd={onSidebarWidthChangeEnd}
+		>
 			<SidebarHeader
 				settings={settings}
 				onSwitchDatabase={(dir) => onSwitchDatabase?.(dir)}
