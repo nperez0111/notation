@@ -22,6 +22,9 @@ type DocumentEditorProps = {
 	initialPropertyValues: DocumentPropertyValues;
 	propertyDefinitions: Property[];
 	theme?: "light" | "dark";
+	contextCollectionName?: string;
+	contextHierarchy?: { id: number; title: string }[];
+	onNavigateToDocument?: (id: number) => void;
 	onSave: (payload: {
 		content: string;
 		title?: string;
@@ -46,6 +49,9 @@ export function DocumentEditor({
 	initialPropertyValues,
 	propertyDefinitions,
 	theme = "dark",
+	contextCollectionName,
+	contextHierarchy,
+	onNavigateToDocument,
 	onSave,
 	onIconChange,
 	documentId,
@@ -101,6 +107,40 @@ export function DocumentEditor({
 
 	return (
 		<div className="flex min-h-0 flex-1 flex-col">
+			{(contextCollectionName || (contextHierarchy && contextHierarchy.length > 0)) && (
+				<div className="flex items-center justify-between border-b border-[var(--color-border)]/60 bg-[var(--color-surface)]/70 px-6 py-2 text-xs text-[var(--color-text-muted)]">
+					<div className="flex flex-wrap items-center gap-1.5">
+						{contextCollectionName && (
+							<span className="font-medium text-[var(--color-text)]">
+								{contextCollectionName}
+							</span>
+						)}
+						{contextHierarchy && contextHierarchy.length > 0 && (
+							<>
+								<span className="text-[var(--color-text-subtle)]">/</span>
+								{contextHierarchy.map((item, index) => {
+									const isLastParent = index === contextHierarchy.length - 1;
+									const label = item.title?.trim() || "Untitled";
+									return (
+										<span key={item.id} className="flex items-center gap-1">
+											<button
+												type="button"
+												onClick={() => onNavigateToDocument?.(item.id)}
+												className="max-w-[160px] truncate text-[var(--color-text-muted)] hover:text-[var(--color-text)] hover:underline"
+											>
+												{label}
+											</button>
+											{!isLastParent && (
+												<span className="text-[var(--color-text-subtle)]">/</span>
+											)}
+										</span>
+									);
+								})}
+							</>
+						)}
+					</div>
+				</div>
+			)}
 			<TitleBar
 				value={title}
 				onChange={setTitle}
@@ -110,25 +150,29 @@ export function DocumentEditor({
 				icon={initialIcon}
 				onIconChange={(icon) => onIconChange(documentId, icon)}
 			/>
-			<PropertiesBar
-				definitions={propertyDefinitions}
-				values={propertyValues}
-				onChange={(next) => {
-					setPropertyValues(next);
-					scheduleSave();
-				}}
-				onBlur={flushSave}
-				onCreateProperty={onCreateProperty}
-				onUpdateProperty={onUpdateProperty}
-				onDeleteProperty={onDeleteProperty}
-				onReorderProperties={onReorderProperties}
-			/>
-			<BlockNoteView
-				editor={editor}
-				theme={theme}
-				className="flex-1 min-h-0"
-				onChange={scheduleSave}
-			/>
+			<div className="mt-3 px-6">
+				<PropertiesBar
+					definitions={propertyDefinitions}
+					values={propertyValues}
+					onChange={(next) => {
+						setPropertyValues(next);
+						scheduleSave();
+					}}
+					onBlur={flushSave}
+					onCreateProperty={onCreateProperty}
+					onUpdateProperty={onUpdateProperty}
+					onDeleteProperty={onDeleteProperty}
+					onReorderProperties={onReorderProperties}
+				/>
+			</div>
+			<div className="mt-2 flex min-h-0 flex-1 px-1 pb-1 pt-1.5">
+				<BlockNoteView
+					editor={editor}
+					theme={theme}
+					className="flex-1 min-h-0"
+					onChange={scheduleSave}
+				/>
+			</div>
 		</div>
 	);
 }

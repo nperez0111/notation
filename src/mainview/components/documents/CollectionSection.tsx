@@ -10,8 +10,6 @@ import {
 	getDescendantIds,
 } from "./documentTree";
 
-const DEPTH_PADDING = 12;
-
 type CollectionSectionProps = {
 	collection: Collection;
 	documents: Document[];
@@ -24,6 +22,8 @@ type CollectionSectionProps = {
 };
 
 type DropData = { key: string; collectionId: number; parentId: number | null; indent: number; edge: "top" | "bottom" };
+
+const DEPTH_PADDING = 12;
 
 function SidebarDropStrip({
 	dropKey,
@@ -71,10 +71,7 @@ function SidebarDropStrip({
 
 	const isActive = activeDrop?.key === dropKey;
 	return (
-		<div
-			ref={ref}
-			className="relative min-h-px shrink-0"
-		>
+		<div ref={ref} className="relative min-h-px shrink-0">
 			{isActive && (
 				<div
 					className="absolute left-0 right-0 z-10 h-0.5 bg-[var(--color-accent)]"
@@ -158,7 +155,7 @@ function DocumentTreeItem({
 				canDrop={canDropSibling}
 				onDrop={(id) => handleReparent(id, collectionId, doc.parentId)}
 			/>
-		<div
+			<div
 				ref={rowRef}
 				className="list-row cursor-grab active:cursor-grabbing"
 				role="listitem"
@@ -276,20 +273,14 @@ export function CollectionSection({
 	};
 
 	return (
-		<section className="border-b border-border last:border-b-0">
-			<div className="flex w-full items-center gap-1 rounded-md px-3 py-1 text-xs font-semibold tracking-wide text-text-subtle">
+		<section className="border-b border-border/60 last:border-b-0">
+			<div className="flex w-full items-center gap-1 rounded-md px-2.5 py-1.5 text-xs font-semibold tracking-wide text-text-subtle">
 				<button
 					type="button"
 					onClick={() => setExpanded((e) => !e)}
-					className="group flex min-w-0 flex-1 items-center gap-1.5 rounded text-left hover:bg-surface-hover"
+					className="group flex min-w-0 flex-1 items-center gap-1.5 rounded px-1.5 py-0.5 text-left hover:bg-surface-hover"
 					aria-expanded={expanded}
 				>
-					<span
-						className={`inline-block shrink-0 text-xs opacity-0 transition-transform group-hover:opacity-100 ${expanded ? "rotate-90" : ""}`}
-						aria-hidden
-					>
-						▸
-					</span>
 					{editingName ? (
 						<input
 							ref={inputRef}
@@ -312,6 +303,14 @@ export function CollectionSection({
 							{collection.name}
 						</span>
 					)}
+					<span
+						className={`ml-1 inline-block shrink-0 text-[0.65rem] text-text-subtle transition-transform ${
+							expanded ? "rotate-90" : ""
+						}`}
+						aria-hidden
+					>
+						▸
+					</span>
 				</button>
 				{onRenameCollection && !editingName && (
 					<StatefulPopover

@@ -70,28 +70,30 @@ export function DocumentSidebar({
 			onWidthChange={onSidebarWidthChange}
 			onWidthChangeEnd={onSidebarWidthChangeEnd}
 		>
-			<SidebarHeader
-				settings={settings}
-				onSwitchDatabase={(dir) => onSwitchDatabase?.(dir)}
-				onCreateCollection={onCreateCollection}
-				onCreatePage={
-					collections.length > 0
-						? () => onCreateDocument(collections[0].id, null)
-						: undefined
-				}
-				onDatabaseMetadataChange={onDatabaseMetadataChange}
-			/>
-			<DocumentList
-				collections={collections}
-				documents={documents}
-				selectedId={selectedId}
-				onSelect={onSelectDocument}
-				onCreateDocument={onCreateDocument}
-				onCreateCollection={onCreateCollection}
-				onRenameCollection={onRenameCollection}
-				onIconChange={onIconChange}
-				onReparentDocument={onReparentDocument}
-			/>
+			<div className="flex flex-1 flex-col gap-1">
+				<SidebarHeader
+					settings={settings}
+					onSwitchDatabase={(dir) => onSwitchDatabase?.(dir)}
+					onCreateCollection={onCreateCollection}
+					onCreatePage={
+						collections.length > 0
+							? () => onCreateDocument(collections[0].id, null)
+							: undefined
+					}
+					onDatabaseMetadataChange={onDatabaseMetadataChange}
+				/>
+				<DocumentList
+					collections={collections}
+					documents={documents}
+					selectedId={selectedId}
+					onSelect={onSelectDocument}
+					onCreateDocument={onCreateDocument}
+					onCreateCollection={onCreateCollection}
+					onRenameCollection={onRenameCollection}
+					onIconChange={onIconChange}
+					onReparentDocument={onReparentDocument}
+				/>
+			</div>
 			{onOpenSettings && (
 				<div className="shrink-0 border-t border-[var(--color-border)] p-2">
 					<button

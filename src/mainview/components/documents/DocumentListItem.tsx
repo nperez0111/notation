@@ -51,7 +51,10 @@ export function DocumentListItem({
 	const indent = depth * DEPTH_PADDING;
 
 	return (
-		<div className="group relative flex min-w-0 items-center gap-1 overflow-hidden" style={{ paddingLeft: indent + 6 }}>
+		<div
+			className="group relative flex min-w-0 items-center gap-1 overflow-hidden"
+			style={{ paddingLeft: indent + 10 }}
+		>
 			<div
 				role="button"
 				tabIndex={0}
@@ -62,7 +65,7 @@ export function DocumentListItem({
 						onSelect();
 					}
 				}}
-				className={`flex min-w-0 flex-1 cursor-pointer items-center gap-1.5 rounded-md py-1 pr-8 text-left text-sm transition-colors ${
+				className={`flex min-w-0 flex-1 cursor-pointer items-center gap-1.5 rounded-md py-1.5 pr-8 pl-1.5 text-left text-sm transition-colors ${
 					isSelected
 						? "bg-accent-muted text-accent-text font-medium"
 						: "text-text-muted hover:bg-surface-hover hover:text-[var(--color-text)]"

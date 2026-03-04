@@ -83,12 +83,12 @@ export function Sidebar({
 	return (
 		<div
 			ref={containerRef}
-			className="relative flex shrink-0 flex-col"
+			className="relative flex min-h-0 shrink-0 flex-col"
 			style={{ width: effectiveWidth }}
 			aria-label="Document sidebar"
 		>
 			<aside
-				className={`flex min-h-0 flex-1 flex-col overflow-x-hidden overflow-y-auto border-r border-[var(--color-border)] bg-[var(--color-surface)] ${className}`}
+				className={`flex min-h-0 flex-1 flex-col overflow-x-hidden overflow-y-auto border-r border-transparent bg-[var(--color-surface)] ${className}`}
 			>
 				{children}
 			</aside>
@@ -97,11 +97,11 @@ export function Sidebar({
 					ref={handleRef}
 					type="button"
 					aria-label="Resize sidebar"
-					className="absolute right-0 top-0 z-10 flex h-full w-1.5 cursor-col-resize items-center justify-center border-0 bg-transparent py-0 outline-none hover:bg-[var(--color-surface-hover)] focus-visible:ring-2 focus-visible:ring-[var(--color-accent)]"
+					className="group absolute right-0 top-0 z-10 flex h-full w-1.5 cursor-col-resize items-center justify-center border-0 bg-transparent py-0 outline-none hover:bg-[var(--color-surface-hover)] focus-visible:ring-2 focus-visible:ring-[var(--color-accent)]"
 					onPointerDown={handlePointerDown}
 				>
 					<span
-						className="h-full w-px shrink-0 bg-[var(--color-border)]"
+						className="h-full w-px shrink-0 bg-transparent opacity-0 group-hover:bg-[var(--color-border)] group-hover:opacity-100"
 						aria-hidden
 					/>
 				</button>

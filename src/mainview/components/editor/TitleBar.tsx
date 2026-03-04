@@ -21,7 +21,7 @@ export function TitleBar({
 	onIconChange,
 }: TitleBarProps) {
 	return (
-		<div className="flex shrink-0 items-center gap-3 border-b border-border px-6 py-3">
+		<div className="flex shrink-0 items-center gap-3 px-6 pt-4">
 			{onIconChange && (
 				<DocumentIconPicker
 					value={icon ?? null}
@@ -29,9 +29,9 @@ export function TitleBar({
 					theme="dark"
 				>
 					{icon ? (
-						<DocumentIconView icon={icon} size={28} className="block shrink-0" />
+						<DocumentIconView icon={icon} size={24} className="block shrink-0" />
 					) : (
-						<span className="flex h-7 w-7 shrink-0 items-center justify-center rounded text-sm text-text-subtle hover:bg-surface-hover">
+						<span className="flex h-6 w-6 shrink-0 items-center justify-center rounded text-xs text-text-subtle hover:bg-surface-hover">
 							+
 						</span>
 					)}
@@ -52,6 +52,8 @@ export function TitleBar({
 							fontSize: "1.25rem",
 							fontWeight: 600,
 							backgroundColor: "transparent",
+							paddingLeft: 0,
+							paddingRight: 0,
 							"::placeholder": {
 								color: $theme.colors.contentTertiary,
 							},

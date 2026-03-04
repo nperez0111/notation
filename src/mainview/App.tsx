@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRpc } from "./electroview";
 import { useTheme } from "./themeContext";
 import type { Collection, Document, Property, SettingsInfo } from "../shared/types";
@@ -243,6 +243,33 @@ export default function App() {
 		[rpc],
 	);
 
+	const currentCollection = useMemo(
+		() =>
+			currentDoc
+				? collections.find((c) => c.id === currentDoc.collectionId) ?? null
+				: null,
+		[currentDoc, collections],
+	);
+
+	const parentHierarchy = useMemo(
+		() => {
+			if (!currentDoc) return [];
+			const byId = new Map(documents.map((d) => [d.id, d]));
+			const chain: { id: number; title: string }[] = [];
+			let parentId = currentDoc.parentId;
+			let safety = 0;
+			while (parentId != null && safety < 16) {
+				const parent = byId.get(parentId);
+				if (!parent) break;
+				chain.unshift({ id: parent.id, title: parent.title });
+				parentId = parent.parentId;
+				safety += 1;
+			}
+			return chain;
+		},
+		[currentDoc, documents],
+	);
+
 	return (
 		<div className="flex h-screen overflow-hidden bg-[var(--color-surface-elevated)] text-[var(--color-text)]">
 			<DocumentSidebar
@@ -270,7 +297,7 @@ export default function App() {
 				onThemeChange={setTheme}
 				onDatabaseReload={refetchFromDatabase}
 			/>
-			<main className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
+			<main className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-[var(--color-surface)]">
 				{loading ? (
 					<div className="flex flex-1 items-center justify-center p-6 text-text-muted">
 						Loading…
@@ -295,24 +322,31 @@ export default function App() {
 						Loading…
 					</div>
 				) : currentDoc ? (
-					<DocumentEditor
-						key={currentDoc.id}
-						documentId={currentDoc.id}
-						initialBlocks={parseDocumentContent(currentDoc.content)}
-						initialTitle={currentDoc.title ?? ""}
-						initialIcon={currentDoc.icon ?? null}
-						initialPropertyValues={parseDocumentProperties(
-							currentDoc.properties ?? "{}",
-						)}
-						propertyDefinitions={propertyDefinitions}
-						theme={resolvedTheme}
-						onSave={onSaveDocument}
-						onIconChange={onIconChange}
-						onCreateProperty={onCreateProperty}
-						onUpdateProperty={onUpdateProperty}
-						onDeleteProperty={onDeleteProperty}
-						onReorderProperties={onReorderProperties}
-					/>
+					<div className="flex flex-1 overflow-auto pt-2 pr-2 pb-2 pl-0">
+						<div className="flex w-full flex-1 flex-col rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-elevated)]">
+							<DocumentEditor
+								key={currentDoc.id}
+								documentId={currentDoc.id}
+								initialBlocks={parseDocumentContent(currentDoc.content)}
+								initialTitle={currentDoc.title ?? ""}
+								initialIcon={currentDoc.icon ?? null}
+								initialPropertyValues={parseDocumentProperties(
+									currentDoc.properties ?? "{}",
+								)}
+								propertyDefinitions={propertyDefinitions}
+								theme={resolvedTheme}
+								contextCollectionName={currentCollection?.name}
+								contextHierarchy={parentHierarchy}
+								onNavigateToDocument={onSelectDocument}
+								onSave={onSaveDocument}
+								onIconChange={onIconChange}
+								onCreateProperty={onCreateProperty}
+								onUpdateProperty={onUpdateProperty}
+								onDeleteProperty={onDeleteProperty}
+								onReorderProperties={onReorderProperties}
+							/>
+						</div>
+					</div>
 				) : (
 					<div className="flex flex-1 items-center justify-center p-6 text-text-muted">
 						Select a note

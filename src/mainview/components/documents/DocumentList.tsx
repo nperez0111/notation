@@ -25,23 +25,21 @@ export function DocumentList({
 	onReparentDocument,
 }: DocumentListProps) {
 	return (
-		<>
-			<ul className="flex-1 overflow-auto py-2" role="list">
-				{collections.map((coll) => (
-					<li key={coll.id}>
-						<CollectionSection
-							collection={coll}
-							documents={documents}
-							selectedId={selectedId}
-							onSelect={onSelect}
-							onCreateDocument={onCreateDocument}
-							onRenameCollection={onRenameCollection}
-							onIconChange={onIconChange}
-							onReparentDocument={onReparentDocument}
-						/>
-					</li>
-				))}
-			</ul>
-		</>
+		<ul className="flex-1 overflow-auto py-2 pr-1" role="list">
+			{collections.map((coll) => (
+				<li key={coll.id} className="px-1.5">
+					<CollectionSection
+						collection={coll}
+						documents={documents}
+						selectedId={selectedId}
+						onSelect={onSelect}
+						onCreateDocument={onCreateDocument}
+						onRenameCollection={onRenameCollection}
+						onIconChange={onIconChange}
+						onReparentDocument={onReparentDocument}
+					/>
+				</li>
+			))}
+		</ul>
 	);
 }
