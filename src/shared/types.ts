@@ -180,7 +180,10 @@ export type DocumentRPC = {
 		messages: {};
 	}>;
 	webview: RPCSchema<{
-		requests: {};
+		requests: {
+			/** Called from main process when user chooses Preferences from the app menu. */
+			openSettings: { params: {}; response: void };
+		};
 		messages: {};
 	}>;
 };

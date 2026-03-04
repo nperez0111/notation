@@ -4,7 +4,14 @@ import type { DocumentRPC } from "../shared/types";
 
 const rpc = Electroview.defineRPC<DocumentRPC>({
 	maxRequestTime: 5000,
-	handlers: { requests: {}, messages: {} },
+	handlers: {
+		requests: {
+			openSettings: () => {
+				window.dispatchEvent(new CustomEvent("open-settings"));
+			},
+		},
+		messages: {},
+	},
 });
 
 const electroview = new Electroview({ rpc });

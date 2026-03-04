@@ -1,4 +1,5 @@
-import {
+import Electrobun, {
+	ApplicationMenu,
 	BrowserView,
 	BrowserWindow,
 	Updater,
@@ -411,10 +412,72 @@ async function getMainViewUrl(): Promise<string> {
 	return "views://mainview/index.html";
 }
 
+const APP_NAME = "Note Taker";
+const isMac = process.platform === "darwin";
+
+// Application menu: set after window + deferred so native bridge receives the config (fixes macOS "Unable to parse empty data").
+// macOS: first item is { submenu } only (app menu); Windows: File first with Settings.
+function buildApplicationMenu(): Parameters<typeof ApplicationMenu.setApplicationMenu>[0] {
+	const appSubmenu = [
+		{ label: "Settings…", action: "open-settings", accelerator: "," },
+		{ type: "separator" },
+		{ role: "hide" },
+		{ role: "hideOthers" },
+		{ role: "showAll" },
+		{ type: "separator" },
+		{ label: "Quit", role: "quit", accelerator: "q" },
+	];
+	const fileSubmenu = [
+		...(isMac ? [] : [{ label: "Settings…", action: "open-settings", accelerator: "," }]),
+		{ type: "separator" },
+		{ role: "close" },
+	];
+	const editSubmenu = [
+		{ role: "undo" },
+		{ role: "redo" },
+		{ type: "separator" },
+		{ role: "cut" },
+		{ role: "copy" },
+		{ role: "paste" },
+		{ role: "pasteAndMatchStyle" },
+		{ role: "delete" },
+		{ role: "selectAll" },
+	];
+	const viewSubmenu = [{ role: "toggleFullScreen" }];
+	const windowSubmenu = isMac
+		? [
+				{ role: "minimize" },
+				{ role: "zoom" },
+				{ type: "separator" },
+				{ role: "bringAllToFront" },
+			]
+		: [{ role: "minimize" }, { role: "zoom" }, { role: "close" }];
+
+	const topLevel: Parameters<typeof ApplicationMenu.setApplicationMenu>[0] = [];
+	if (isMac) {
+		topLevel.push({ submenu: appSubmenu }, { label: "File", submenu: fileSubmenu });
+	} else {
+		topLevel.push({ label: "File", submenu: fileSubmenu });
+	}
+	topLevel.push(
+		{ label: "Edit", submenu: editSubmenu },
+		{ label: "View", submenu: viewSubmenu },
+		{ label: "Window", submenu: windowSubmenu },
+	);
+	return topLevel;
+}
+
+Electrobun.events.on("application-menu-clicked", (e) => {
+	const action = (e?.data as { action?: string } | undefined)?.action;
+	if (action === "open-settings") {
+		mainWindow.webview?.rpc?.request?.("openSettings", {});
+	}
+});
+
 const url = await getMainViewUrl();
 
 const mainWindow = new BrowserWindow({
-	title: "Note Taker",
+	title: APP_NAME,
 	url,
 	rpc: documentRPC,
 	frame: {
@@ -424,6 +487,11 @@ const mainWindow = new BrowserWindow({
 		y: 200,
 	},
 });
+
+// Defer so native bridge has the string when it reads it (macOS); same pattern on Windows for consistency.
+setTimeout(() => {
+	ApplicationMenu.setApplicationMenu(buildApplicationMenu());
+}, 100);
 
 console.log("Note Taker started!");
 console.log(`Database: ${dbState.dbPath}`);

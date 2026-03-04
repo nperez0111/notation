@@ -69,6 +69,13 @@ export default function App() {
 		refetchFromDatabase();
 	}, [refetchFromDatabase]);
 
+	// Open Settings when triggered from the application menu (e.g. Note Taker → Settings).
+	useEffect(() => {
+		const handler = () => setSettingsOpen(true);
+		window.addEventListener("open-settings", handler);
+		return () => window.removeEventListener("open-settings", handler);
+	}, []);
+
 	// Load property definitions for the current document's collection.
 	useEffect(() => {
 		if (!currentDoc) {
