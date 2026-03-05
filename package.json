@@ -4,9 +4,9 @@
   "description": "Electrobun app with React, Tailwind CSS, and Vite HMR",
   "scripts": {
     "start": "vite build && electrobun dev",
-    "dev": "electrobun dev --watch",
-    "dev:hmr": "concurrently \"bun run hmr\" \"bun run start\"",
-    "hmr": "vite --port 5173",
+    "dev": "bun run --parallel dev:hmr dev:electrobun",
+    "dev:electrobun": "electrobun dev --watch",
+    "dev:hmr": "vite --port 5173",
     "typecheck": "tsc --noEmit",
     "build:canary": "vite build && electrobun build --env=canary"
   },
