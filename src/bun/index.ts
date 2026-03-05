@@ -57,7 +57,7 @@ function saveSettings(settings: SettingsJson): void {
 }
 
 const docColumns =
-	"id, title, created_at as createdAt, updated_at as updatedAt, created_by as createdBy, updated_by as updatedBy, content, properties, collection_id as collectionId, parent_id as parentId, icon";
+	"id, title, created_at as createdAt, updated_at as updatedAt, created_by as createdBy, updated_by as updatedBy, content, properties, collection_id as collectionId, parent_id as parentId, icon, child_order as childOrder";
 const collColumns =
 	"id, name, created_at as createdAt, updated_at as updatedAt";
 const propColumns = "id, collection_id as collectionId, label, type";
@@ -75,6 +75,7 @@ type DbState = {
 	getDocumentById: PreparedStatement;
 	insertDocument: PreparedStatement;
 	updateDocumentStmt: PreparedStatement;
+	updateDocumentChildOrder: PreparedStatement;
 	deleteDocumentStmt: PreparedStatement;
 	getPropertiesByCollection: PreparedStatement;
 	getPropertyById: PreparedStatement;
@@ -109,7 +110,8 @@ const INIT_SCHEMA = `
     properties TEXT NOT NULL DEFAULT '{}',
     collection_id INTEGER NOT NULL REFERENCES collections(id),
     parent_id INTEGER REFERENCES documents(id),
-    icon TEXT
+    icon TEXT,
+    child_order INTEGER NOT NULL DEFAULT 0
   );
 `;
 
@@ -134,6 +136,11 @@ function createDbState(dbDirectory: string): DbState {
 		db.exec("UPDATE property_definitions SET collection_id = (SELECT id FROM collections LIMIT 1) WHERE collection_id IS NULL");
 	} catch {
 		// Column already exists (new schema)
+	}
+	try {
+		db.exec("ALTER TABLE documents ADD COLUMN child_order INTEGER NOT NULL DEFAULT 0");
+	} catch {
+		// Column already exists
 	}
 
 	if (!(db.query("SELECT id FROM collections LIMIT 1").get() as unknown)) {
@@ -164,10 +171,13 @@ function createDbState(dbDirectory: string): DbState {
 			`SELECT ${docColumns} FROM documents WHERE id = ?`,
 		),
 		insertDocument: db.prepare(
-			`INSERT INTO documents (title, content, created_by, updated_by, properties, collection_id, parent_id, icon) VALUES (?, ?, ?, ?, ?, ?, ?, ?) RETURNING ${docColumns}`,
+			`INSERT INTO documents (title, content, created_by, updated_by, properties, collection_id, parent_id, icon, child_order) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING ${docColumns}`,
 		),
 		updateDocumentStmt: db.prepare(
-			`UPDATE documents SET title = COALESCE(?, title), content = COALESCE(?, content), updated_by = ?, updated_at = datetime('now'), properties = COALESCE(?, properties), collection_id = COALESCE(?, collection_id), parent_id = ?, icon = ? WHERE id = ? RETURNING ${docColumns}`,
+			`UPDATE documents SET title = COALESCE(?, title), content = COALESCE(?, content), updated_by = ?, updated_at = datetime('now'), properties = COALESCE(?, properties), collection_id = COALESCE(?, collection_id), parent_id = ?, icon = ?, child_order = COALESCE(?, child_order) WHERE id = ? RETURNING ${docColumns}`,
+		),
+		updateDocumentChildOrder: db.prepare(
+			"UPDATE documents SET child_order = ?, updated_at = datetime('now') WHERE id = ?",
 		),
 		deleteDocumentStmt: db.prepare("DELETE FROM documents WHERE id = ?"),
 		getPropertiesByCollection: db.prepare(
@@ -280,6 +290,7 @@ const documentRPC = BrowserView.defineRPC<DocumentRPC>({
 					collectionId,
 					parentId ?? null,
 					icon ?? null,
+					0, // child_order
 				) as Document;
 			},
 			updateDocument: ({
@@ -311,6 +322,7 @@ const documentRPC = BrowserView.defineRPC<DocumentRPC>({
 					if (descendantsOfSource.has(newParentId)) return row;
 				}
 
+				const currentChildOrder = (row as { childOrder?: number }).childOrder ?? 0;
 				const updated = dbState.updateDocumentStmt.get(
 					newTitle,
 					newContent,
@@ -319,6 +331,7 @@ const documentRPC = BrowserView.defineRPC<DocumentRPC>({
 					newCollectionId,
 					newParentId,
 					newIcon ?? null,
+					currentChildOrder, // leave unchanged unless reorderChildDocuments
 					id,
 				) as Document | undefined;
 				return updated ?? null;
@@ -351,6 +364,11 @@ const documentRPC = BrowserView.defineRPC<DocumentRPC>({
 					dbState.updatePropertyPosition.run(position, id);
 				});
 				return undefined;
+			},
+			reorderChildDocuments: ({ collectionId, parentId, orderedIds }) => {
+				orderedIds.forEach((id, index) => {
+					dbState.updateDocumentChildOrder.run(index, id);
+				});
 			},
 			getSettings: (): SettingsInfo => {
 				const count = (dbState.db.query("SELECT COUNT(*) as c FROM documents").get() as { c: number }).c;

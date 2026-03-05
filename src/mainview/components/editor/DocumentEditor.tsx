@@ -5,6 +5,7 @@ import "@blocknote/core/fonts/inter.css";
 import "@blocknote/mantine/style.css";
 import type { Block, PartialBlock } from "@blocknote/core";
 import type {
+	Document,
 	DocumentIcon,
 	DocumentPropertyValues,
 	Property,
@@ -12,6 +13,7 @@ import type {
 import { serializeDocumentProperties } from "../../lib/propertyValues";
 import { TitleBar } from "./TitleBar";
 import { PropertiesBar } from "./PropertiesBar";
+import { ChildDocumentsSection } from "./ChildDocumentsSection";
 
 const SAVE_DELAY_MS = 500;
 
@@ -40,6 +42,9 @@ type DocumentEditorProps = {
 	) => Promise<void>;
 	onDeleteProperty: (id: number) => Promise<void>;
 	onReorderProperties: (orderedIds: number[]) => Promise<void>;
+	/** Child documents of the current doc (in display order). Shown after properties. */
+	childDocuments?: Document[];
+	onReorderChildDocuments?: (orderedIds: number[]) => void;
 };
 
 export function DocumentEditor({
@@ -59,6 +64,8 @@ export function DocumentEditor({
 	onUpdateProperty,
 	onDeleteProperty,
 	onReorderProperties,
+	childDocuments = [],
+	onReorderChildDocuments,
 }: DocumentEditorProps) {
 	const [title, setTitle] = useState(initialTitle);
 	const [propertyValues, setPropertyValues] =
@@ -165,6 +172,13 @@ export function DocumentEditor({
 					onReorderProperties={onReorderProperties}
 				/>
 			</div>
+			{childDocuments.length > 0 && (
+				<ChildDocumentsSection
+					children={childDocuments}
+					onNavigate={(id) => onNavigateToDocument?.(id)}
+					onReorder={(orderedIds) => onReorderChildDocuments?.(orderedIds)}
+				/>
+			)}
 			<div className="mt-2 flex min-h-0 flex-1 px-1 pb-1 pt-1.5">
 				<BlockNoteView
 					editor={editor}

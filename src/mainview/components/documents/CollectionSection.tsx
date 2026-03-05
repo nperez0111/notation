@@ -18,7 +18,13 @@ type CollectionSectionProps = {
 	onCreateDocument: (collectionId: number, parentId?: number | null) => void;
 	onRenameCollection?: (id: number, name: string) => void;
 	onIconChange?: (documentId: number, icon: Document["icon"]) => void;
-	onReparentDocument?: (documentId: number, collectionId: number, parentId: number | null) => void;
+	onReparentDocument?: (
+		documentId: number,
+		collectionId: number,
+		parentId: number | null,
+		/** Index among siblings to insert at (for manual order). Omit to append. */
+		insertAtIndex?: number,
+	) => void;
 };
 
 type DropData = { key: string; collectionId: number; parentId: number | null; indent: number; edge: "top" | "bottom" };
@@ -36,6 +42,7 @@ function SidebarDropStrip({
 	setActiveDrop,
 	canDrop,
 	onDrop,
+	insertAtIndex,
 	children,
 }: {
 	dropKey: string;
@@ -48,7 +55,8 @@ function SidebarDropStrip({
 	activeDrop: DropData | null;
 	setActiveDrop: (d: DropData | null) => void;
 	canDrop: (args: { source: { data: Record<string, unknown> } }) => boolean;
-	onDrop: (documentId: number) => void;
+	onDrop: (documentId: number, insertAtIndex?: number) => void;
+	insertAtIndex?: number;
 	children?: React.ReactNode;
 }) {
 	const showLineIndicator = showLine !== false;
@@ -66,12 +74,12 @@ function SidebarDropStrip({
 			onDrop: ({ source }) => {
 				const data = source.data as { type?: string; documentId?: number };
 				if (data.type === "sidebar-doc" && typeof data.documentId === "number") {
-					onDrop(data.documentId);
+					onDrop(data.documentId, insertAtIndex);
 				}
 				setActiveDrop(null);
 			},
 		});
-	}, [dropKey, collectionId, parentId, indent, edge, canDrop, onDrop, setActiveDrop]);
+	}, [dropKey, collectionId, parentId, indent, edge, canDrop, onDrop, setActiveDrop, insertAtIndex]);
 
 	const isActive = activeDrop?.key === dropKey;
 	return (
@@ -113,7 +121,12 @@ function DocumentTreeItem({
 	onSelect: (id: number) => void;
 	onCreateDocument: (collectionId: number, parentId?: number | null) => void;
 	onIconChange?: (documentId: number, icon: Document["icon"]) => void;
-	onReparentDocument?: (documentId: number, collectionId: number, parentId: number | null) => void;
+	onReparentDocument?: (
+		documentId: number,
+		collectionId: number,
+		parentId: number | null,
+		insertAtIndex?: number,
+	) => void;
 	activeDrop: DropData | null;
 	setActiveDrop: (d: DropData | null) => void;
 	/** When true, this row is a child of the current "drop onto" target and shows lighter highlight. */
@@ -132,8 +145,13 @@ function DocumentTreeItem({
 		});
 	}, [doc.id, collectionId, onReparentDocument]);
 
-	const handleReparent = (documentId: number, targetCollectionId: number, targetParentId: number | null) => {
-		onReparentDocument?.(documentId, targetCollectionId, targetParentId);
+	const handleReparent = (
+		documentId: number,
+		targetCollectionId: number,
+		targetParentId: number | null,
+		insertAtIndex?: number,
+	) => {
+		onReparentDocument?.(documentId, targetCollectionId, targetParentId, insertAtIndex);
 	};
 
 	/** Forbid dropping if the move would make the document its own ancestor (parent into itself or into a descendant). */
@@ -160,6 +178,9 @@ function DocumentTreeItem({
 		return true;
 	};
 
+	const siblings = getChildDocuments(byParent, doc.parentId);
+	const siblingIndex = siblings.findIndex((d) => d.id === doc.id);
+
 	return (
 		<>
 			<SidebarDropStrip
@@ -171,7 +192,8 @@ function DocumentTreeItem({
 				activeDrop={activeDrop}
 				setActiveDrop={setActiveDrop}
 				canDrop={canDropSibling}
-				onDrop={(id) => handleReparent(id, collectionId, doc.parentId)}
+				onDrop={(id, insertAtIndex) => handleReparent(id, collectionId, doc.parentId, insertAtIndex)}
+				insertAtIndex={siblingIndex >= 0 ? siblingIndex : undefined}
 			/>
 			<div
 				ref={rowRef}
@@ -207,7 +229,8 @@ function DocumentTreeItem({
 				activeDrop={activeDrop}
 				setActiveDrop={setActiveDrop}
 				canDrop={canDropChild}
-				onDrop={(id) => handleReparent(id, collectionId, doc.id)}
+				onDrop={(id, insertAtIndex) => handleReparent(id, collectionId, doc.id, insertAtIndex)}
+				insertAtIndex={children.length}
 			/>
 			{expanded &&
 				children.map((child) => (
@@ -236,7 +259,8 @@ function DocumentTreeItem({
 				activeDrop={activeDrop}
 				setActiveDrop={setActiveDrop}
 				canDrop={canDropSibling}
-				onDrop={(id) => handleReparent(id, collectionId, doc.parentId)}
+				onDrop={(id, insertAtIndex) => handleReparent(id, collectionId, doc.parentId, insertAtIndex)}
+				insertAtIndex={siblingIndex >= 0 ? siblingIndex + 1 : undefined}
 			/>
 		</>
 	);
@@ -379,7 +403,8 @@ export function CollectionSection({
 								activeDrop={activeDrop}
 								setActiveDrop={setActiveDrop}
 								canDrop={({ source }) => source.data.type === "sidebar-doc"}
-								onDrop={(id) => onReparentDocument(id, collection.id, null)}
+								onDrop={(id, insertAtIndex) => onReparentDocument(id, collection.id, null, insertAtIndex)}
+								insertAtIndex={0}
 							/>
 						)}
 						{roots.map((doc) => (

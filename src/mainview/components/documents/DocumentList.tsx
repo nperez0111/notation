@@ -10,7 +10,12 @@ type DocumentListProps = {
 	onCreateCollection?: () => void;
 	onRenameCollection?: (id: number, name: string) => void;
 	onIconChange?: (documentId: number, icon: Document["icon"]) => void;
-	onReparentDocument?: (documentId: number, collectionId: number, parentId: number | null) => void;
+	onReparentDocument?: (
+		documentId: number,
+		collectionId: number,
+		parentId: number | null,
+		insertAtIndex?: number,
+	) => void;
 };
 
 export function DocumentList({

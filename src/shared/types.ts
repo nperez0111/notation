@@ -64,6 +64,7 @@ export type DocumentIconKey = (typeof DOCUMENT_ICON_KEYS)[number];
  * - collectionId: which collection this document belongs to.
  * - parentId: optional parent document for nesting; null means top-level in the collection.
  * - icon: optional DocumentIcon (fixed key or emoji string).
+ * - childOrder: position among siblings (same parent); used for manual ordering in sidebar and child list.
  */
 export type Document = {
 	id: number;
@@ -78,6 +79,8 @@ export type Document = {
 	parentId: number | null;
 	/** Optional icon: fixed icon key or emoji string. */
 	icon?: DocumentIcon;
+	/** Position among siblings (same parent) for manual ordering. Default 0. */
+	childOrder?: number;
 };
 
 /** Settings info returned to the UI (database path and document count for prompts). */
@@ -159,6 +162,10 @@ export type DocumentRPC = {
 			};
 			reorderPropertyDefinitions: {
 				params: { orderedIds: number[] };
+				response: void;
+			};
+			reorderChildDocuments: {
+				params: { collectionId: number; parentId: number | null; orderedIds: number[] };
 				response: void;
 			};
 			getSettings: { params: {}; response: SettingsInfo };

@@ -3,7 +3,7 @@ import { useRpc } from "./electroview";
 import { useTheme } from "./themeContext";
 import type { Collection, Document, Property, SettingsInfo } from "../shared/types";
 import { DocumentSidebar } from "./components/documents/DocumentSidebar";
-import { buildDocumentTree, getDescendantIds } from "./components/documents/documentTree";
+import { buildDocumentTree, getChildDocuments, getDescendantIds } from "./components/documents/documentTree";
 import { DocumentEditor } from "./components/editor/DocumentEditor";
 import { SettingsModal } from "./components/settings/SettingsModal";
 import { parseDocumentContent } from "./lib/parseContent";
@@ -175,7 +175,12 @@ export default function App() {
 	);
 
 	const onReparentDocument = useCallback(
-		async (documentId: number, collectionId: number, parentId: number | null) => {
+		async (
+			documentId: number,
+			collectionId: number,
+			parentId: number | null,
+			insertAtIndex?: number,
+		) => {
 			// No-op if move would make the document its own ancestor (parent into itself or into a descendant)
 			const byParent = buildDocumentTree(documents, collectionId);
 			const descendantsOfSource = getDescendantIds(byParent, documentId);
@@ -191,8 +196,29 @@ export default function App() {
 			if (!updated) return;
 			const next: Document = { ...updated, updatedAt: updated.updatedAt ?? new Date().toISOString() };
 			setCurrentDoc((prev) => (prev?.id === documentId ? next : prev));
+
+			// Build new sibling order and persist childOrder
+			const siblings = documents.filter(
+				(d) => d.collectionId === collectionId && d.parentId === parentId,
+			);
+			const siblingIds = siblings
+				.sort((a, b) => (a.childOrder ?? 0) - (b.childOrder ?? 0))
+				.map((d) => d.id);
+			const withoutMoved = siblingIds.filter((id) => id !== documentId);
+			const at = insertAtIndex ?? withoutMoved.length;
+			const orderedIds = [...withoutMoved];
+			orderedIds.splice(Math.min(at, orderedIds.length), 0, documentId);
+
+			await rpc.reorderChildDocuments({ collectionId, parentId, orderedIds });
+
+			const movedIndex = orderedIds.indexOf(documentId);
 			setDocuments((prev) =>
-				prev.map((d) => (d.id === documentId ? next : d)),
+				prev.map((d) => {
+					if (d.id === documentId) return { ...next, childOrder: movedIndex };
+					const i = orderedIds.indexOf(d.id);
+					if (i >= 0 && d.parentId === parentId) return { ...d, childOrder: i };
+					return d;
+				}),
 			);
 		},
 		[rpc, documents],
@@ -277,6 +303,32 @@ export default function App() {
 		[currentDoc, documents],
 	);
 
+	const childDocuments = useMemo(() => {
+		if (!currentDoc) return [];
+		const byParent = buildDocumentTree(documents, currentDoc.collectionId);
+		return getChildDocuments(byParent, currentDoc.id);
+	}, [currentDoc, documents]);
+
+	const onReorderChildDocuments = useCallback(
+		async (orderedIds: number[]) => {
+			if (!currentDoc || orderedIds.length === 0) return;
+			await rpc.reorderChildDocuments({
+				collectionId: currentDoc.collectionId,
+				parentId: currentDoc.id,
+				orderedIds,
+			});
+			setDocuments((prev) =>
+				prev.map((d) => {
+					const i = orderedIds.indexOf(d.id);
+					if (i >= 0 && d.parentId === currentDoc.id)
+						return { ...d, childOrder: i };
+					return d;
+				}),
+			);
+		},
+		[rpc, currentDoc],
+	);
+
 	return (
 		<div className="flex h-screen overflow-hidden bg-[var(--color-surface-elevated)] text-[var(--color-text)]">
 			<DocumentSidebar
@@ -351,6 +403,8 @@ export default function App() {
 								onUpdateProperty={onUpdateProperty}
 								onDeleteProperty={onDeleteProperty}
 								onReorderProperties={onReorderProperties}
+								childDocuments={childDocuments}
+								onReorderChildDocuments={onReorderChildDocuments}
 							/>
 						</div>
 					</div>

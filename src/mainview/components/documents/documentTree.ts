@@ -1,8 +1,18 @@
 import type { Document } from "../../../shared/types";
 
 /**
+ * Sort key: manual childOrder first (asc), then updatedAt desc as tiebreaker.
+ */
+function sortSiblings(a: Document, b: Document) {
+	const orderA = a.childOrder ?? 0;
+	const orderB = b.childOrder ?? 0;
+	if (orderA !== orderB) return orderA - orderB;
+	return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime();
+}
+
+/**
  * Build a tree of documents for a collection: roots have parentId null,
- * children grouped by parentId. Sorts roots and each group by updatedAt desc.
+ * children grouped by parentId. Sorts roots and each group by childOrder asc, then updatedAt desc.
  */
 export function buildDocumentTree(documents: Document[], collectionId: number) {
 	const byCollection = documents.filter((d) => d.collectionId === collectionId);
@@ -12,9 +22,7 @@ export function buildDocumentTree(documents: Document[], collectionId: number) {
 		if (!byParent.has(key)) byParent.set(key, []);
 		byParent.get(key)!.push(doc);
 	}
-	const sortByUpdated = (a: Document, b: Document) =>
-		new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime();
-	for (const arr of byParent.values()) arr.sort(sortByUpdated);
+	for (const arr of byParent.values()) arr.sort(sortSiblings);
 	return byParent;
 }
 
