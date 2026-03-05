@@ -1,6 +1,5 @@
 import type {
 	DocumentPropertyValues,
-	Property,
 	PropertyType,
 } from "../../shared/types";
 

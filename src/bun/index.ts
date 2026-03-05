@@ -13,6 +13,9 @@ import type {
 	SettingsInfo,
 } from "../shared/types";
 import Database from "bun:sqlite";
+
+type DatabaseInstance = InstanceType<typeof Database>;
+type PreparedStatement = ReturnType<DatabaseInstance["prepare"]>;
 import { join, basename } from "path";
 import { existsSync, mkdirSync, copyFileSync, readFileSync } from "fs";
 import { execSync } from "child_process";
@@ -60,25 +63,25 @@ const collColumns =
 const propColumns = "id, collection_id as collectionId, label, type";
 
 type DbState = {
-	db: Database.Database;
+	db: DatabaseInstance;
 	dbPath: string;
 	dbDirectory: string;
-	getAllCollections: ReturnType<Database.Database["prepare"]>;
-	getCollectionById: ReturnType<Database.Database["prepare"]>;
-	insertCollection: ReturnType<Database.Database["prepare"]>;
-	updateCollectionStmt: ReturnType<Database.Database["prepare"]>;
-	deleteCollectionStmt: ReturnType<Database.Database["prepare"]>;
-	getAllDocuments: ReturnType<Database.Database["prepare"]>;
-	getDocumentById: ReturnType<Database.Database["prepare"]>;
-	insertDocument: ReturnType<Database.Database["prepare"]>;
-	updateDocumentStmt: ReturnType<Database.Database["prepare"]>;
-	deleteDocumentStmt: ReturnType<Database.Database["prepare"]>;
-	getPropertiesByCollection: ReturnType<Database.Database["prepare"]>;
-	getPropertyById: ReturnType<Database.Database["prepare"]>;
-	insertProperty: ReturnType<Database.Database["prepare"]>;
-	updatePropertyStmt: ReturnType<Database.Database["prepare"]>;
-	deletePropertyStmt: ReturnType<Database.Database["prepare"]>;
-	updatePropertyPosition: ReturnType<Database.Database["prepare"]>;
+	getAllCollections: PreparedStatement;
+	getCollectionById: PreparedStatement;
+	insertCollection: PreparedStatement;
+	updateCollectionStmt: PreparedStatement;
+	deleteCollectionStmt: PreparedStatement;
+	getAllDocuments: PreparedStatement;
+	getDocumentById: PreparedStatement;
+	insertDocument: PreparedStatement;
+	updateDocumentStmt: PreparedStatement;
+	deleteDocumentStmt: PreparedStatement;
+	getPropertiesByCollection: PreparedStatement;
+	getPropertyById: PreparedStatement;
+	insertProperty: PreparedStatement;
+	updatePropertyStmt: PreparedStatement;
+	deletePropertyStmt: PreparedStatement;
+	updatePropertyPosition: PreparedStatement;
 };
 
 const INIT_SCHEMA = `
@@ -451,22 +454,22 @@ const isMac = process.platform === "darwin";
 function buildApplicationMenu(): Parameters<typeof ApplicationMenu.setApplicationMenu>[0] {
 	const appSubmenu = [
 		{ label: "Settings…", action: "open-settings", accelerator: "," },
-		{ type: "separator" },
+		{ type: "separator" as const },
 		{ role: "hide" },
 		{ role: "hideOthers" },
 		{ role: "showAll" },
-		{ type: "separator" },
+		{ type: "separator" as const },
 		{ label: "Quit", role: "quit", accelerator: "q" },
 	];
 	const fileSubmenu = [
 		...(isMac ? [] : [{ label: "Settings…", action: "open-settings", accelerator: "," }]),
-		{ type: "separator" },
+		{ type: "separator" as const },
 		{ role: "close" },
 	];
 	const editSubmenu = [
 		{ role: "undo" },
 		{ role: "redo" },
-		{ type: "separator" },
+		{ type: "separator" as const },
 		{ role: "cut" },
 		{ role: "copy" },
 		{ role: "paste" },
@@ -479,7 +482,7 @@ function buildApplicationMenu(): Parameters<typeof ApplicationMenu.setApplicatio
 		? [
 				{ role: "minimize" },
 				{ role: "zoom" },
-				{ type: "separator" },
+				{ type: "separator" as const },
 				{ role: "bringAllToFront" },
 			]
 		: [{ role: "minimize" }, { role: "zoom" }, { role: "close" }];

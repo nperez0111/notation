@@ -16,9 +16,9 @@ const rpc = Electroview.defineRPC<DocumentRPC>({
 
 const electroview = new Electroview({ rpc });
 
-export type DocumentRpcRequest = typeof electroview.rpc.request;
+export type DocumentRpcRequest = NonNullable<typeof electroview.rpc>["request"];
 
-const RpcContext = createContext<typeof electroview.rpc.request | null>(null);
+const RpcContext = createContext<NonNullable<typeof electroview.rpc>["request"] | null>(null);
 
 export function useRpc(): DocumentRpcRequest {
 	const r = useContext(RpcContext);
@@ -28,7 +28,7 @@ export function useRpc(): DocumentRpcRequest {
 
 export function RpcProvider({ children }: { children: React.ReactNode }) {
 	return (
-		<RpcContext.Provider value={electroview.rpc.request}>
+		<RpcContext.Provider value={electroview.rpc!.request}>
 			{children}
 		</RpcContext.Provider>
 	);

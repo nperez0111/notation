@@ -47,7 +47,7 @@ function SidebarDropStrip({
 	showLine?: boolean;
 	activeDrop: DropData | null;
 	setActiveDrop: (d: DropData | null) => void;
-	canDrop: (source: { data: Record<string, unknown> }) => boolean;
+	canDrop: (args: { source: { data: Record<string, unknown> } }) => boolean;
 	onDrop: (documentId: number) => void;
 	children?: React.ReactNode;
 }) {

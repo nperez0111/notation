@@ -19,7 +19,7 @@ export function DocumentList({
 	selectedId,
 	onSelect,
 	onCreateDocument,
-	onCreateCollection,
+	onCreateCollection: _onCreateCollection,
 	onRenameCollection,
 	onIconChange,
 	onReparentDocument,

@@ -111,7 +111,6 @@ function PropertyValueInput({
 	onChange: (v: ParsedValue) => void;
 	onBlur?: () => void;
 }) {
-	const id = `prop-value-${property.id}`;
 	const type = property.type;
 
 	if (type === "checkbox") {
