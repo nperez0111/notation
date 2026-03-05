@@ -35,9 +35,6 @@
       },
     },
   },
-  "patchedDependencies": {
-    "electrobun@1.14.4": "patches/electrobun@1.14.4.patch",
-  },
   "packages": {
     "@alloc/quick-lru": ["@alloc/quick-lru@5.2.0", "", {}, "sha512-UrcABB+4bUrFABwbluTIBErXwvbsU/V7TZWfmbgJfbkwiBuziS9gxdODUyuiecfdGQ85jglMW6juS3+z5TsKLw=="],
 
