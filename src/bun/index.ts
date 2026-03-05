@@ -187,6 +187,27 @@ function createDbState(dbDirectory: string): DbState {
 		),
 	};
 }
+/** Returns set of all descendant document ids under the given document (by parent_id chain). */
+function getDescendantIds(documents: Document[], parentId: number): Set<number> {
+	const byParent = new Map<number | null, Document[]>();
+	for (const d of documents) {
+		const key = d.parentId;
+		if (!byParent.has(key)) byParent.set(key, []);
+		byParent.get(key)!.push(d);
+	}
+	const out = new Set<number>();
+	const stack = [parentId];
+	while (stack.length > 0) {
+		const id = stack.pop()!;
+		const children = byParent.get(id) ?? [];
+		for (const c of children) {
+			out.add(c.id);
+			stack.push(c.id);
+		}
+	}
+	return out;
+}
+
 const initialSettings = loadSettings();
 const initialDbDirectory = initialSettings.dbDirectory ?? dataDir;
 let dbState = createDbState(initialDbDirectory);
@@ -277,6 +298,16 @@ const documentRPC = BrowserView.defineRPC<DocumentRPC>({
 				const newParentId =
 					parentId !== undefined ? parentId : row.parentId;
 				const newIcon = icon !== undefined ? icon : (row as { icon?: string | null }).icon;
+
+				// Enforce: cannot move a document into itself or into one of its descendants (no-op)
+				if (parentId !== undefined && newParentId !== null) {
+					if (newParentId === id) return row;
+					const allDocs = dbState.getAllDocuments.all() as Document[];
+					const inCollection = allDocs.filter((d) => d.collectionId === newCollectionId);
+					const descendantsOfSource = getDescendantIds(inCollection, id);
+					if (descendantsOfSource.has(newParentId)) return row;
+				}
+
 				const updated = dbState.updateDocumentStmt.get(
 					newTitle,
 					newContent,

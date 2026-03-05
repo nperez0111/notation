@@ -3,6 +3,7 @@ import { useRpc } from "./electroview";
 import { useTheme } from "./themeContext";
 import type { Collection, Document, Property, SettingsInfo } from "../shared/types";
 import { DocumentSidebar } from "./components/documents/DocumentSidebar";
+import { buildDocumentTree, getDescendantIds } from "./components/documents/documentTree";
 import { DocumentEditor } from "./components/editor/DocumentEditor";
 import { SettingsModal } from "./components/settings/SettingsModal";
 import { parseDocumentContent } from "./lib/parseContent";
@@ -175,6 +176,12 @@ export default function App() {
 
 	const onReparentDocument = useCallback(
 		async (documentId: number, collectionId: number, parentId: number | null) => {
+			// No-op if move would make the document its own ancestor (parent into itself or into a descendant)
+			const byParent = buildDocumentTree(documents, collectionId);
+			const descendantsOfSource = getDescendantIds(byParent, documentId);
+			if (parentId !== null && (parentId === documentId || descendantsOfSource.has(parentId))) {
+				return;
+			}
 			const updated = await rpc.updateDocument({
 				id: documentId,
 				collectionId,
@@ -188,7 +195,7 @@ export default function App() {
 				prev.map((d) => (d.id === documentId ? next : d)),
 			);
 		},
-		[rpc],
+		[rpc, documents],
 	);
 
 	const onCreateProperty = useCallback(

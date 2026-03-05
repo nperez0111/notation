@@ -19,6 +19,8 @@ type DocumentListItemProps = {
 	onToggleExpand?: () => void;
 	/** Called when document icon changes. */
 	onIconChange?: (documentId: number, icon: Document["icon"]) => void;
+	/** Visual state when this row is the drop target (A will become child of this doc). */
+	dropTargetHighlight?: "parent" | "child";
 };
 
 const DEPTH_PADDING = 12; // px per nesting level
@@ -46,6 +48,7 @@ export function DocumentListItem({
 	expanded = true,
 	onToggleExpand,
 	onIconChange,
+	dropTargetHighlight,
 }: DocumentListItemProps) {
 	const title = doc.title?.trim() || "Untitled";
 	const indent = depth * DEPTH_PADDING;
@@ -66,9 +69,13 @@ export function DocumentListItem({
 					}
 				}}
 				className={`flex min-w-0 flex-1 cursor-pointer items-center gap-1.5 rounded-md py-1.5 pr-8 pl-1.5 text-left text-sm transition-colors ${
-					isSelected
-						? "bg-accent-muted text-accent-text font-medium"
-						: "text-text-muted hover:bg-surface-hover hover:text-[var(--color-text)]"
+					dropTargetHighlight === "parent"
+						? "bg-[var(--color-drop-target-parent)]"
+						: dropTargetHighlight === "child"
+							? "bg-[var(--color-drop-target-child)]"
+							: isSelected
+								? "bg-accent-muted text-accent-text font-medium"
+								: "text-text-muted hover:bg-surface-hover hover:text-[var(--color-text)]"
 				}`}
 				title={title}
 			>

@@ -31,6 +31,7 @@ function SidebarDropStrip({
 	parentId,
 	indent,
 	edge,
+	showLine,
 	activeDrop,
 	setActiveDrop,
 	canDrop,
@@ -42,12 +43,15 @@ function SidebarDropStrip({
 	parentId: number | null;
 	indent: number;
 	edge: "top" | "bottom";
+	/** When false, no line is shown (used for "drop onto" child zone; highlight is on the row instead). */
+	showLine?: boolean;
 	activeDrop: DropData | null;
 	setActiveDrop: (d: DropData | null) => void;
 	canDrop: (source: { data: Record<string, unknown> }) => boolean;
 	onDrop: (documentId: number) => void;
 	children?: React.ReactNode;
 }) {
+	const showLineIndicator = showLine !== false;
 	const ref = useRef<HTMLDivElement>(null);
 	useEffect(() => {
 		const el = ref.current;
@@ -72,7 +76,7 @@ function SidebarDropStrip({
 	const isActive = activeDrop?.key === dropKey;
 	return (
 		<div ref={ref} className="relative min-h-px shrink-0">
-			{isActive && (
+			{showLineIndicator && isActive && (
 				<div
 					className="absolute left-0 right-0 z-10 h-0.5 bg-[var(--color-accent)]"
 					style={{
@@ -99,6 +103,7 @@ function DocumentTreeItem({
 	onReparentDocument,
 	activeDrop,
 	setActiveDrop,
+	showAsDropTargetChild,
 }: {
 	doc: Document;
 	depth: number;
@@ -111,11 +116,12 @@ function DocumentTreeItem({
 	onReparentDocument?: (documentId: number, collectionId: number, parentId: number | null) => void;
 	activeDrop: DropData | null;
 	setActiveDrop: (d: DropData | null) => void;
+	/** When true, this row is a child of the current "drop onto" target and shows lighter highlight. */
+	showAsDropTargetChild?: boolean;
 }) {
 	const children = getChildDocuments(byParent, doc.id);
 	const [expanded, setExpanded] = useState(true);
 	const rowRef = useRef<HTMLDivElement>(null);
-	const descendantIds = getDescendantIds(byParent, doc.id);
 
 	useEffect(() => {
 		const el = rowRef.current;
@@ -130,16 +136,28 @@ function DocumentTreeItem({
 		onReparentDocument?.(documentId, targetCollectionId, targetParentId);
 	};
 
+	/** Forbid dropping if the move would make the document its own ancestor (parent into itself or into a descendant). */
+	const wouldCreateCycle = (sourceId: number, newParentId: number | null) => {
+		if (newParentId === null) return false;
+		if (newParentId === sourceId) return true; // would be own parent
+		const descendantsOfSource = getDescendantIds(byParent, sourceId);
+		return descendantsOfSource.has(newParentId);
+	};
+
 	const canDropSibling = ({ source }: { source: { data: Record<string, unknown> } }) => {
 		if (source.data.type !== "sidebar-doc") return false;
 		const documentId = source.data.documentId as number;
-		return documentId !== doc.id;
+		if (documentId === doc.id) return false;
+		if (wouldCreateCycle(documentId, doc.parentId)) return false;
+		return true;
 	};
 
 	const canDropChild = ({ source }: { source: { data: Record<string, unknown> } }) => {
 		if (source.data.type !== "sidebar-doc") return false;
 		const documentId = source.data.documentId as number;
-		return documentId !== doc.id && !descendantIds.has(documentId);
+		if (documentId === doc.id) return false; // drop onto self
+		if (wouldCreateCycle(documentId, doc.id)) return false; // drop onto a descendant of self
+		return true;
 	};
 
 	return (
@@ -174,6 +192,9 @@ function DocumentTreeItem({
 					expanded={expanded}
 					onToggleExpand={children.length > 0 ? () => setExpanded((e) => !e) : undefined}
 					onIconChange={onIconChange}
+					dropTargetHighlight={
+						activeDrop?.key === `child-${doc.id}` ? "parent" : showAsDropTargetChild ? "child" : undefined
+					}
 				/>
 			</div>
 			<SidebarDropStrip
@@ -182,21 +203,11 @@ function DocumentTreeItem({
 				parentId={doc.id}
 				indent={depth + 1}
 				edge="top"
+				showLine={false}
 				activeDrop={activeDrop}
 				setActiveDrop={setActiveDrop}
 				canDrop={canDropChild}
 				onDrop={(id) => handleReparent(id, collectionId, doc.id)}
-			/>
-			<SidebarDropStrip
-				dropKey={`after-${doc.id}`}
-				collectionId={collectionId}
-				parentId={doc.parentId}
-				indent={depth}
-				edge="bottom"
-				activeDrop={activeDrop}
-				setActiveDrop={setActiveDrop}
-				canDrop={canDropSibling}
-				onDrop={(id) => handleReparent(id, collectionId, doc.parentId)}
 			/>
 			{expanded &&
 				children.map((child) => (
@@ -213,8 +224,20 @@ function DocumentTreeItem({
 						onReparentDocument={onReparentDocument}
 						activeDrop={activeDrop}
 						setActiveDrop={setActiveDrop}
+						showAsDropTargetChild={activeDrop?.key === `child-${doc.id}`}
 					/>
 				))}
+			<SidebarDropStrip
+				dropKey={`after-${doc.id}`}
+				collectionId={collectionId}
+				parentId={doc.parentId}
+				indent={depth}
+				edge="bottom"
+				activeDrop={activeDrop}
+				setActiveDrop={setActiveDrop}
+				canDrop={canDropSibling}
+				onDrop={(id) => handleReparent(id, collectionId, doc.parentId)}
+			/>
 		</>
 	);
 }
