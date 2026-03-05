@@ -365,7 +365,7 @@ const documentRPC = BrowserView.defineRPC<DocumentRPC>({
 				});
 				return undefined;
 			},
-			reorderChildDocuments: ({ collectionId, parentId, orderedIds }) => {
+			reorderChildDocuments: ({ orderedIds }) => {
 				orderedIds.forEach((id, index) => {
 					dbState.updateDocumentChildOrder.run(index, id);
 				});

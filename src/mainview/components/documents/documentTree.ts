@@ -32,7 +32,7 @@ export function getRootDocuments(byParent: Map<number | null, Document[]>) {
 
 export function getChildDocuments(
 	byParent: Map<number | null, Document[]>,
-	parentId: number,
+	parentId: number | null,
 ) {
 	return byParent.get(parentId) ?? [];
 }
