@@ -397,7 +397,7 @@ export default function App() {
             Loading…
           </div>
         ) : currentDoc ? (
-          <div className="pt-2 pr-2 pb-12 mb-2 pl-0 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-elevated)] overflow-auto">
+          <div className="pt-2 pr-2 pb-12 mb-2 mr-2 mt-2 pl-0 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-elevated)] overflow-auto">
             <DocumentEditor
               key={currentDoc.id}
               documentId={currentDoc.id}
