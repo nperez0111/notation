@@ -114,7 +114,7 @@ export function DocumentEditor({
   }
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col">
+    <>
       {(contextCollectionName ||
         (contextHierarchy && contextHierarchy.length > 0)) && (
         <div className="flex items-center justify-between bg-[var(--color-surface)]/70 px-6 py-2 text-xs text-[var(--color-text-muted)]">
@@ -183,7 +183,7 @@ export function DocumentEditor({
           onReorder={(orderedIds) => onReorderChildDocuments?.(orderedIds)}
         />
       )}
-      <div className="mt-2 flex min-h-0 flex-1 px-1 pb-1 pt-1.5">
+      <div className="mt-2 px-1 pb-1 pt-1.5">
         <BlockNoteView
           editor={editor}
           theme={theme}
@@ -191,6 +191,6 @@ export function DocumentEditor({
           onChange={scheduleSave}
         />
       </div>
-    </div>
+    </>
   );
 }
