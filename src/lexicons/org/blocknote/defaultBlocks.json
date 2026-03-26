@@ -1,0 +1,587 @@
+{
+  "lexicon": 1,
+  "id": "org.blocknote.defaultBlocks",
+  "description": "Default BlockNote block types, inline content types, and style types. These are the specific implementations of the generic shapes defined in org.blocknote.schema.",
+  "defs": {
+    "defaultBlockProps": {
+      "type": "object",
+      "description": "Common properties shared by most text-bearing blocks.",
+      "properties": {
+        "backgroundColor": {
+          "type": "string",
+          "maxLength": 64,
+          "description": "Block background color. 'default' uses the inherited/theme color."
+        },
+        "textColor": {
+          "type": "string",
+          "maxLength": 64,
+          "description": "Block text color. 'default' uses the inherited/theme color."
+        },
+        "textAlignment": {
+          "type": "string",
+          "maxLength": 32,
+          "description": "Text alignment within the block.",
+          "knownValues": ["left", "center", "right", "justify"]
+        }
+      }
+    },
+
+    "paragraph": {
+      "type": "object",
+      "description": "A standard text paragraph block.",
+      "required": ["id", "type"],
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "type": { "type": "string", "const": "paragraph" },
+        "props": { "type": "ref", "ref": "#defaultBlockProps" },
+        "inlineContent": {
+          "type": "array",
+          "items": { "type": "union", "refs": ["org.blocknote.schema#styledText", "org.blocknote.schema#link"] }
+        },
+        "children": {
+          "type": "array",
+          "items": { "type": "ref", "ref": "org.blocknote.schema#block" }
+        }
+      }
+    },
+
+    "heading": {
+      "type": "object",
+      "description": "A heading block (h1–h6), optionally toggleable/collapsible.",
+      "required": ["id", "type"],
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "type": { "type": "string", "const": "heading" },
+        "props": { "type": "ref", "ref": "#headingProps" },
+        "inlineContent": {
+          "type": "array",
+          "items": { "type": "union", "refs": ["org.blocknote.schema#styledText", "org.blocknote.schema#link"] }
+        },
+        "children": {
+          "type": "array",
+          "items": { "type": "ref", "ref": "org.blocknote.schema#block" }
+        }
+      }
+    },
+    "headingProps": {
+      "type": "object",
+      "description": "Properties specific to heading blocks.",
+      "required": ["level"],
+      "properties": {
+        "level": {
+          "type": "integer",
+          "description": "Heading level (1–6).",
+          "minimum": 1,
+          "maximum": 6
+        },
+        "isToggleable": {
+          "type": "boolean",
+          "description": "Whether this heading can be toggled to show/hide its children."
+        },
+        "backgroundColor": {
+          "type": "string",
+          "maxLength": 64,
+          "description": "Block background color. 'default' uses the inherited/theme color."
+        },
+        "textColor": {
+          "type": "string",
+          "maxLength": 64,
+          "description": "Block text color. 'default' uses the inherited/theme color."
+        },
+        "textAlignment": {
+          "type": "string",
+          "maxLength": 32,
+          "description": "Text alignment within the block.",
+          "knownValues": ["left", "center", "right", "justify"]
+        }
+      }
+    },
+
+    "quote": {
+      "type": "object",
+      "description": "A block quote.",
+      "required": ["id", "type"],
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "type": { "type": "string", "const": "quote" },
+        "props": { "type": "ref", "ref": "#quoteProps" },
+        "inlineContent": {
+          "type": "array",
+          "items": { "type": "union", "refs": ["org.blocknote.schema#styledText", "org.blocknote.schema#link"] }
+        },
+        "children": {
+          "type": "array",
+          "items": { "type": "ref", "ref": "org.blocknote.schema#block" }
+        }
+      }
+    },
+    "quoteProps": {
+      "type": "object",
+      "description": "Properties specific to quote blocks (no textAlignment).",
+      "properties": {
+        "backgroundColor": {
+          "type": "string",
+          "maxLength": 64,
+          "description": "Block background color. 'default' uses the inherited/theme color."
+        },
+        "textColor": {
+          "type": "string",
+          "maxLength": 64,
+          "description": "Block text color. 'default' uses the inherited/theme color."
+        }
+      }
+    },
+
+    "codeBlock": {
+      "type": "object",
+      "description": "A code block with optional syntax highlighting.",
+      "required": ["id", "type"],
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "type": { "type": "string", "const": "codeBlock" },
+        "props": { "type": "ref", "ref": "#codeBlockProps" },
+        "inlineContent": {
+          "type": "array",
+          "items": { "type": "union", "refs": ["org.blocknote.schema#styledText", "org.blocknote.schema#link"] }
+        },
+        "children": {
+          "type": "array",
+          "items": { "type": "ref", "ref": "org.blocknote.schema#block" }
+        }
+      }
+    },
+    "codeBlockProps": {
+      "type": "object",
+      "description": "Properties specific to code blocks.",
+      "properties": {
+        "language": {
+          "type": "string",
+          "maxLength": 64,
+          "description": "The programming language for syntax highlighting."
+        }
+      }
+    },
+
+    "bulletListItem": {
+      "type": "object",
+      "description": "An unordered (bullet) list item.",
+      "required": ["id", "type"],
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "type": { "type": "string", "const": "bulletListItem" },
+        "props": { "type": "ref", "ref": "#defaultBlockProps" },
+        "inlineContent": {
+          "type": "array",
+          "items": { "type": "union", "refs": ["org.blocknote.schema#styledText", "org.blocknote.schema#link"] }
+        },
+        "children": {
+          "type": "array",
+          "items": { "type": "ref", "ref": "org.blocknote.schema#block" }
+        }
+      }
+    },
+
+    "numberedListItem": {
+      "type": "object",
+      "description": "An ordered (numbered) list item.",
+      "required": ["id", "type"],
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "type": { "type": "string", "const": "numberedListItem" },
+        "props": { "type": "ref", "ref": "#numberedListItemProps" },
+        "inlineContent": {
+          "type": "array",
+          "items": { "type": "union", "refs": ["org.blocknote.schema#styledText", "org.blocknote.schema#link"] }
+        },
+        "children": {
+          "type": "array",
+          "items": { "type": "ref", "ref": "org.blocknote.schema#block" }
+        }
+      }
+    },
+    "numberedListItemProps": {
+      "type": "object",
+      "description": "Properties specific to numbered list items.",
+      "properties": {
+        "start": {
+          "type": "integer",
+          "description": "The starting number for this list item."
+        },
+        "backgroundColor": {
+          "type": "string",
+          "maxLength": 64,
+          "description": "Block background color. 'default' uses the inherited/theme color."
+        },
+        "textColor": {
+          "type": "string",
+          "maxLength": 64,
+          "description": "Block text color. 'default' uses the inherited/theme color."
+        },
+        "textAlignment": {
+          "type": "string",
+          "maxLength": 32,
+          "description": "Text alignment within the block.",
+          "knownValues": ["left", "center", "right", "justify"]
+        }
+      }
+    },
+
+    "checkListItem": {
+      "type": "object",
+      "description": "A checkbox/todo list item.",
+      "required": ["id", "type"],
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "type": { "type": "string", "const": "checkListItem" },
+        "props": { "type": "ref", "ref": "#checkListItemProps" },
+        "inlineContent": {
+          "type": "array",
+          "items": { "type": "union", "refs": ["org.blocknote.schema#styledText", "org.blocknote.schema#link"] }
+        },
+        "children": {
+          "type": "array",
+          "items": { "type": "ref", "ref": "org.blocknote.schema#block" }
+        }
+      }
+    },
+    "checkListItemProps": {
+      "type": "object",
+      "description": "Properties specific to check list items.",
+      "properties": {
+        "checked": {
+          "type": "boolean",
+          "description": "Whether this item is checked/completed."
+        },
+        "backgroundColor": {
+          "type": "string",
+          "maxLength": 64,
+          "description": "Block background color. 'default' uses the inherited/theme color."
+        },
+        "textColor": {
+          "type": "string",
+          "maxLength": 64,
+          "description": "Block text color. 'default' uses the inherited/theme color."
+        },
+        "textAlignment": {
+          "type": "string",
+          "maxLength": 32,
+          "description": "Text alignment within the block.",
+          "knownValues": ["left", "center", "right", "justify"]
+        }
+      }
+    },
+
+    "toggleListItem": {
+      "type": "object",
+      "description": "A collapsible/toggleable list item.",
+      "required": ["id", "type"],
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "type": { "type": "string", "const": "toggleListItem" },
+        "props": { "type": "ref", "ref": "#defaultBlockProps" },
+        "inlineContent": {
+          "type": "array",
+          "items": { "type": "union", "refs": ["org.blocknote.schema#styledText", "org.blocknote.schema#link"] }
+        },
+        "children": {
+          "type": "array",
+          "items": { "type": "ref", "ref": "org.blocknote.schema#block" }
+        }
+      }
+    },
+
+    "image": {
+      "type": "object",
+      "description": "An image embed block.",
+      "required": ["id", "type"],
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "type": { "type": "string", "const": "image" },
+        "props": { "type": "ref", "ref": "#imageProps" },
+        "children": {
+          "type": "array",
+          "items": { "type": "ref", "ref": "org.blocknote.schema#block" }
+        }
+      }
+    },
+    "imageProps": {
+      "type": "object",
+      "description": "Properties specific to image blocks.",
+      "properties": {
+        "url": {
+          "type": "string",
+          "maxLength": 10000,
+          "description": "The image URL."
+        },
+        "name": {
+          "type": "string",
+          "maxLength": 1000,
+          "description": "Display name or alt text for the image."
+        },
+        "caption": {
+          "type": "string",
+          "maxLength": 10000,
+          "description": "Caption displayed below the image."
+        },
+        "showPreview": {
+          "type": "boolean",
+          "description": "Whether to show an inline preview of the image."
+        },
+        "previewWidth": {
+          "type": "integer",
+          "description": "Width of the inline preview in pixels."
+        },
+        "textAlignment": {
+          "type": "string",
+          "maxLength": 32,
+          "description": "Alignment of the image within the block.",
+          "knownValues": ["left", "center", "right", "justify"]
+        },
+        "backgroundColor": {
+          "type": "string",
+          "maxLength": 64,
+          "description": "Block background color. 'default' uses the inherited/theme color."
+        }
+      }
+    },
+
+    "video": {
+      "type": "object",
+      "description": "A video embed block.",
+      "required": ["id", "type"],
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "type": { "type": "string", "const": "video" },
+        "props": { "type": "ref", "ref": "#videoProps" },
+        "children": {
+          "type": "array",
+          "items": { "type": "ref", "ref": "org.blocknote.schema#block" }
+        }
+      }
+    },
+    "videoProps": {
+      "type": "object",
+      "description": "Properties specific to video blocks.",
+      "properties": {
+        "url": {
+          "type": "string",
+          "maxLength": 10000,
+          "description": "The video URL."
+        },
+        "name": {
+          "type": "string",
+          "maxLength": 1000,
+          "description": "Display name for the video."
+        },
+        "caption": {
+          "type": "string",
+          "maxLength": 10000,
+          "description": "Caption displayed below the video."
+        },
+        "showPreview": {
+          "type": "boolean",
+          "description": "Whether to show an inline preview."
+        },
+        "previewWidth": {
+          "type": "integer",
+          "description": "Width of the inline preview in pixels."
+        },
+        "textAlignment": {
+          "type": "string",
+          "maxLength": 32,
+          "description": "Alignment of the video within the block.",
+          "knownValues": ["left", "center", "right", "justify"]
+        },
+        "backgroundColor": {
+          "type": "string",
+          "maxLength": 64,
+          "description": "Block background color. 'default' uses the inherited/theme color."
+        }
+      }
+    },
+
+    "audio": {
+      "type": "object",
+      "description": "An audio embed block.",
+      "required": ["id", "type"],
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "type": { "type": "string", "const": "audio" },
+        "props": { "type": "ref", "ref": "#audioProps" },
+        "children": {
+          "type": "array",
+          "items": { "type": "ref", "ref": "org.blocknote.schema#block" }
+        }
+      }
+    },
+    "audioProps": {
+      "type": "object",
+      "description": "Properties specific to audio blocks.",
+      "properties": {
+        "url": {
+          "type": "string",
+          "maxLength": 10000,
+          "description": "The audio URL."
+        },
+        "name": {
+          "type": "string",
+          "maxLength": 1000,
+          "description": "Display name for the audio."
+        },
+        "caption": {
+          "type": "string",
+          "maxLength": 10000,
+          "description": "Caption displayed below the audio player."
+        },
+        "showPreview": {
+          "type": "boolean",
+          "description": "Whether to show an inline preview."
+        },
+        "backgroundColor": {
+          "type": "string",
+          "maxLength": 64,
+          "description": "Block background color. 'default' uses the inherited/theme color."
+        }
+      }
+    },
+
+    "file": {
+      "type": "object",
+      "description": "A file attachment block.",
+      "required": ["id", "type"],
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "type": { "type": "string", "const": "file" },
+        "props": { "type": "ref", "ref": "#fileProps" },
+        "children": {
+          "type": "array",
+          "items": { "type": "ref", "ref": "org.blocknote.schema#block" }
+        }
+      }
+    },
+    "fileProps": {
+      "type": "object",
+      "description": "Properties specific to file blocks.",
+      "properties": {
+        "url": {
+          "type": "string",
+          "maxLength": 10000,
+          "description": "The file URL."
+        },
+        "name": {
+          "type": "string",
+          "maxLength": 1000,
+          "description": "Display name for the file."
+        },
+        "caption": {
+          "type": "string",
+          "maxLength": 10000,
+          "description": "Caption displayed below the file."
+        },
+        "backgroundColor": {
+          "type": "string",
+          "maxLength": 64,
+          "description": "Block background color. 'default' uses the inherited/theme color."
+        }
+      }
+    },
+
+    "table": {
+      "type": "object",
+      "description": "A table block with rows and cells.",
+      "required": ["id", "type"],
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "type": { "type": "string", "const": "table" },
+        "props": { "type": "ref", "ref": "#tableProps" },
+        "tableContent": {
+          "type": "ref",
+          "ref": "org.blocknote.schema#tableContent"
+        },
+        "children": {
+          "type": "array",
+          "items": { "type": "ref", "ref": "org.blocknote.schema#block" }
+        }
+      }
+    },
+    "tableProps": {
+      "type": "object",
+      "description": "Properties specific to table blocks.",
+      "properties": {
+        "textColor": {
+          "type": "string",
+          "maxLength": 64,
+          "description": "Table text color. 'default' uses the inherited/theme color."
+        }
+      }
+    },
+
+    "divider": {
+      "type": "object",
+      "description": "A horizontal divider/rule block. Has no content or props.",
+      "required": ["id", "type"],
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "type": { "type": "string", "const": "divider" },
+        "children": {
+          "type": "array",
+          "items": { "type": "ref", "ref": "org.blocknote.schema#block" }
+        }
+      }
+    },
+
+    "text": {
+      "type": "object",
+      "description": "The default styled text inline content type.",
+      "required": ["text"],
+      "properties": {
+        "type": { "type": "string", "const": "text" },
+        "text": { "type": "string", "maxLength": 1000000 },
+        "styles": { "type": "ref", "ref": "org.blocknote.schema#styles" }
+      }
+    },
+
+    "link": {
+      "type": "object",
+      "description": "The default link inline content type.",
+      "required": ["href", "content"],
+      "properties": {
+        "type": { "type": "string", "const": "link" },
+        "href": { "type": "string", "maxLength": 10000 },
+        "content": {
+          "type": "array",
+          "items": { "type": "ref", "ref": "#text" }
+        }
+      }
+    },
+
+    "bold": {
+      "type": "token",
+      "description": "Bold text style (boolean)."
+    },
+    "italic": {
+      "type": "token",
+      "description": "Italic text style (boolean)."
+    },
+    "underline": {
+      "type": "token",
+      "description": "Underline text style (boolean)."
+    },
+    "strike": {
+      "type": "token",
+      "description": "Strikethrough text style (boolean)."
+    },
+    "code": {
+      "type": "token",
+      "description": "Inline code text style (boolean)."
+    },
+    "textColor": {
+      "type": "token",
+      "description": "Text foreground color style (string value)."
+    },
+    "backgroundColor": {
+      "type": "token",
+      "description": "Text background/highlight color style (string value)."
+    }
+  }
+}

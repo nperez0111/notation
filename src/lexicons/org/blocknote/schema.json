@@ -1,0 +1,206 @@
+{
+  "lexicon": 1,
+  "id": "org.blocknote.schema",
+  "description": "Generic shapes for BlockNote documents: blocks, inline content, and styles. These define the format, not specific implementations.",
+  "defs": {
+    "styles": {
+      "type": "object",
+      "description": "Text-level formatting applied to a styled text span. Keys are style names, values are booleans or strings depending on the style type. Extensible — applications may define custom styles.",
+      "properties": {}
+    },
+    "styledText": {
+      "type": "object",
+      "description": "A span of text with optional formatting styles.",
+      "required": ["text"],
+      "properties": {
+        "type": {
+          "type": "string",
+          "maxLength": 128,
+          "description": "The inline content type identifier."
+        },
+        "text": {
+          "type": "string",
+          "maxLength": 1000000,
+          "description": "The text content of this span."
+        },
+        "styles": {
+          "type": "ref",
+          "ref": "#styles",
+          "description": "Formatting styles applied to this text span."
+        }
+      }
+    },
+    "link": {
+      "type": "object",
+      "description": "A hyperlink containing one or more styled text spans.",
+      "required": ["href", "content"],
+      "properties": {
+        "type": {
+          "type": "string",
+          "maxLength": 128,
+          "description": "The inline content type identifier."
+        },
+        "href": {
+          "type": "string",
+          "maxLength": 10000,
+          "description": "The URL this link points to."
+        },
+        "content": {
+          "type": "array",
+          "description": "The styled text spans that make up the link text.",
+          "items": {
+            "type": "ref",
+            "ref": "#styledText"
+          }
+        }
+      }
+    },
+    "tableCellProps": {
+      "type": "object",
+      "description": "Properties for a table cell.",
+      "properties": {
+        "colspan": {
+          "type": "integer",
+          "description": "Number of columns this cell spans.",
+          "minimum": 1
+        },
+        "rowspan": {
+          "type": "integer",
+          "description": "Number of rows this cell spans.",
+          "minimum": 1
+        },
+        "backgroundColor": {
+          "type": "string",
+          "maxLength": 64,
+          "description": "Cell background color. 'default' uses the inherited/theme color."
+        },
+        "textColor": {
+          "type": "string",
+          "maxLength": 64,
+          "description": "Cell text color. 'default' uses the inherited/theme color."
+        },
+        "textAlignment": {
+          "type": "string",
+          "maxLength": 32,
+          "description": "Text alignment within the cell.",
+          "knownValues": ["left", "center", "right", "justify"]
+        }
+      }
+    },
+    "tableCell": {
+      "type": "object",
+      "description": "A single cell in a table row.",
+      "required": ["content"],
+      "properties": {
+        "type": {
+          "type": "string",
+          "maxLength": 128,
+          "description": "The cell type identifier (e.g., 'tableCell', 'tableHeader')."
+        },
+        "props": {
+          "type": "ref",
+          "ref": "#tableCellProps"
+        },
+        "content": {
+          "type": "array",
+          "description": "The inline content within this cell.",
+          "items": {
+            "type": "union",
+            "refs": ["#styledText", "#link"]
+          }
+        }
+      }
+    },
+    "tableRow": {
+      "type": "object",
+      "description": "A single row in a table.",
+      "required": ["cells"],
+      "properties": {
+        "cells": {
+          "type": "array",
+          "description": "The cells in this row.",
+          "items": {
+            "type": "ref",
+            "ref": "#tableCell"
+          }
+        }
+      }
+    },
+    "tableContent": {
+      "type": "object",
+      "description": "Table-specific content structure, used instead of inlineContent for table blocks.",
+      "required": ["rows"],
+      "properties": {
+        "type": {
+          "type": "string",
+          "const": "tableContent"
+        },
+        "columnWidths": {
+          "type": "array",
+          "description": "Width of each column in the table.",
+          "items": {
+            "type": "integer"
+          }
+        },
+        "headerRows": {
+          "type": "integer",
+          "description": "Number of header rows at the top of the table."
+        },
+        "headerCols": {
+          "type": "integer",
+          "description": "Number of header columns on the left of the table."
+        },
+        "rows": {
+          "type": "array",
+          "description": "The rows in this table.",
+          "items": {
+            "type": "ref",
+            "ref": "#tableRow"
+          }
+        }
+      }
+    },
+    "block": {
+      "type": "object",
+      "description": "A generic block in a BlockNote document. The type field identifies the block kind, and props holds type-specific properties. Use specific block type lexicons (e.g., org.blocknote.defaultBlocks#paragraph) for constrained validation of props.",
+      "required": ["id", "type"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "maxLength": 128,
+          "description": "Unique identifier for this block within the document."
+        },
+        "type": {
+          "type": "string",
+          "maxLength": 256,
+          "description": "The block type identifier (e.g., 'paragraph', 'heading', 'image')."
+        },
+        "props": {
+          "type": "unknown",
+          "description": "Block-type-specific properties. The shape depends on the block type."
+        },
+        "inlineContent": {
+          "type": "array",
+          "description": "Inline content for text-bearing blocks (paragraphs, headings, lists, etc.). Mutually exclusive with tableContent.",
+          "items": {
+            "type": "union",
+            "refs": ["#styledText", "#link"]
+          }
+        },
+        "tableContent": {
+          "type": "ref",
+          "ref": "#tableContent",
+          "description": "Table content for table blocks. Mutually exclusive with inlineContent."
+        },
+        "children": {
+          "type": "array",
+          "description": "Nested child blocks.",
+          "items": {
+            "type": "ref",
+            "ref": "#block"
+          }
+        }
+      }
+    }
+  }
+}
