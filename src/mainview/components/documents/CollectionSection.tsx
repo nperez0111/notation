@@ -18,6 +18,7 @@ type CollectionSectionProps = {
 	onCreateDocument: (collectionId: number, parentId?: number | null) => void;
 	onRenameCollection?: (id: number, name: string) => void;
 	onIconChange?: (documentId: number, icon: Document["icon"]) => void;
+	onDeleteDocument?: (id: number) => void;
 	onReparentDocument?: (
 		documentId: number,
 		collectionId: number,
@@ -108,6 +109,7 @@ function DocumentTreeItem({
 	onSelect,
 	onCreateDocument,
 	onIconChange,
+	onDeleteDocument,
 	onReparentDocument,
 	activeDrop,
 	setActiveDrop,
@@ -121,6 +123,7 @@ function DocumentTreeItem({
 	onSelect: (id: number) => void;
 	onCreateDocument: (collectionId: number, parentId?: number | null) => void;
 	onIconChange?: (documentId: number, icon: Document["icon"]) => void;
+	onDeleteDocument?: (id: number) => void;
 	onReparentDocument?: (
 		documentId: number,
 		collectionId: number,
@@ -210,6 +213,8 @@ function DocumentTreeItem({
 							? () => onCreateDocument(collectionId, doc.id)
 							: undefined
 					}
+					onDelete={onDeleteDocument ? () => onDeleteDocument(doc.id) : undefined}
+					descendantCount={getDescendantIds(byParent, doc.id).size}
 					hasChildren={children.length > 0}
 					expanded={expanded}
 					onToggleExpand={children.length > 0 ? () => setExpanded((e) => !e) : undefined}
@@ -244,6 +249,7 @@ function DocumentTreeItem({
 						onSelect={onSelect}
 						onCreateDocument={onCreateDocument}
 						onIconChange={onIconChange}
+						onDeleteDocument={onDeleteDocument}
 						onReparentDocument={onReparentDocument}
 						activeDrop={activeDrop}
 						setActiveDrop={setActiveDrop}
@@ -274,6 +280,7 @@ export function CollectionSection({
 	onCreateDocument,
 	onRenameCollection,
 	onIconChange,
+	onDeleteDocument,
 	onReparentDocument,
 }: CollectionSectionProps) {
 	const [expanded, setExpanded] = useState(true);
@@ -418,6 +425,7 @@ export function CollectionSection({
 								onSelect={onSelect}
 								onCreateDocument={onCreateDocument}
 								onIconChange={onIconChange}
+								onDeleteDocument={onDeleteDocument}
 								onReparentDocument={onReparentDocument}
 								activeDrop={activeDrop}
 								setActiveDrop={setActiveDrop}

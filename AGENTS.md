@@ -6,9 +6,10 @@ Use this file as a table of contents: **keywords → files**. Read the listed fi
 
 ## What this project is
 
-**Local-first note-taking app** with a simple UI for editing documents. Data lives in a user-chosen folder (SQLite). Built with:
+**Prototype notion-like note-taking app** built on [ATProto](https://atproto.com/docs), targeting both a website and a native desktop application. The native app is built with [Electrobun](https://blackboard.sh/electrobun/llms.txt) (Bun main process + WebKit webview — not Electron). Documents are stored locally in SQLite; ATProto integration is the foundation for syncing and identity.
 
 - **[Electrobun](https://blackboard.sh/electrobun/llms.txt)** — desktop shell (Bun main process + webview), not Electron.
+- **[ATProto](https://atproto.com/docs)** — decentralized protocol for identity and data sync.
 - **[BlockNote](https://www.blocknotejs.org/llms.txt)** — block-based rich text editor.
 - **Base UI** — component library for modals, pickers, etc. (with Styletron).
 - **CSS variables** — theming (light/dark) in `index.css`; Base UI themes in `theme.ts`.
@@ -34,6 +35,41 @@ Use this file as a table of contents: **keywords → files**. Read the listed fi
 | **Types**: Document, Collection, Property, SettingsInfo, DocumentRPC | `src/shared/types.ts` | Single source of truth for domain and RPC schema. |
 | **RPC client**, useRpc, RpcProvider | `src/mainview/electroview.tsx` | Electroview.defineRPC, context for `rpc.request`. |
 | **RPC handlers** (Bun side) | `src/bun/index.ts` | `BrowserView.defineRPC<DocumentRPC>` with all request handlers. |
+
+### RPC methods (`DocumentRPC`) — defined in `src/shared/types.ts`, implemented in `src/bun/index.ts`
+
+**Bun → webview** (main process calls these on the frontend):
+
+| Method | Params | Response |
+|--------|--------|----------|
+| `openSettings` | — | `void` — triggered from app menu Preferences item |
+
+**Webview → Bun** (frontend calls these on the backend):
+
+| Method | Params | Response |
+|--------|--------|----------|
+| `getCollections` | — | `Collection[]` |
+| `getCollection` | `id` | `Collection \| null` |
+| `createCollection` | `name` | `Collection` |
+| `updateCollection` | `id, name` | `Collection \| null` |
+| `deleteCollection` | `id` | `{ success }` |
+| `getDocuments` | — | `Document[]` |
+| `getDocument` | `id` | `Document \| null` |
+| `createDocument` | `title, content, createdBy, updatedBy, collectionId, parentId?, icon?, properties?` | `Document` |
+| `updateDocument` | `id, updatedBy, title?, content?, collectionId?, parentId?, icon?, properties?` | `Document \| null` |
+| `deleteDocument` | `id` | `{ success }` |
+| `getPropertyDefinitions` | `collectionId` | `Property[]` |
+| `createPropertyDefinition` | `collectionId, label, type` | `Property` |
+| `updatePropertyDefinition` | `id, label?, type?` | `Property \| null` |
+| `deletePropertyDefinition` | `id` | `{ success }` |
+| `reorderPropertyDefinitions` | `orderedIds` | `void` |
+| `reorderChildDocuments` | `collectionId, parentId, orderedIds` | `void` |
+| `getSettings` | — | `SettingsInfo` |
+| `chooseDatabaseDirectory` | — | `string \| null` — opens OS file picker |
+| `setDatabaseLocation` | `directory, mode: "new"\|"move"` | `{ success }` |
+| `setDatabaseMetadata` | `name?, icon?` | `{ success }` |
+| `setSidebarWidth` | `width` | `{ success }` |
+| `reloadDatabase` | — | `{ success }` |
 
 ---
 
