@@ -2,9 +2,7 @@ import type {} from "@atcute/lexicons";
 import * as v from "@atcute/lexicons/validations";
 
 const _blockSchema = /*#__PURE__*/ v.object({
-  $type: /*#__PURE__*/ v.optional(
-    /*#__PURE__*/ v.literal("org.blocknote.schema#block"),
-  ),
+  $type: /*#__PURE__*/ v.optional(/*#__PURE__*/ v.literal("org.blocknote.schema#block")),
   /**
    * Nested child blocks.
    */
@@ -15,17 +13,13 @@ const _blockSchema = /*#__PURE__*/ v.object({
    * Unique identifier for this block within the document.
    * @maxLength 128
    */
-  id: /*#__PURE__*/ v.constrain(/*#__PURE__*/ v.string(), [
-    /*#__PURE__*/ v.stringLength(0, 128),
-  ]),
+  id: /*#__PURE__*/ v.constrain(/*#__PURE__*/ v.string(), [/*#__PURE__*/ v.stringLength(0, 128)]),
   /**
    * Inline content for text-bearing blocks (paragraphs, headings, lists, etc.). Mutually exclusive with tableContent.
    */
   get inlineContent() {
     return /*#__PURE__*/ v.optional(
-      /*#__PURE__*/ v.array(
-        /*#__PURE__*/ v.variant([linkSchema, styledTextSchema]),
-      ),
+      /*#__PURE__*/ v.array(/*#__PURE__*/ v.variant([linkSchema, styledTextSchema])),
     );
   },
   /**
@@ -42,14 +36,10 @@ const _blockSchema = /*#__PURE__*/ v.object({
    * The block type identifier (e.g., 'paragraph', 'heading', 'image').
    * @maxLength 256
    */
-  type: /*#__PURE__*/ v.constrain(/*#__PURE__*/ v.string(), [
-    /*#__PURE__*/ v.stringLength(0, 256),
-  ]),
+  type: /*#__PURE__*/ v.constrain(/*#__PURE__*/ v.string(), [/*#__PURE__*/ v.stringLength(0, 256)]),
 });
 const _linkSchema = /*#__PURE__*/ v.object({
-  $type: /*#__PURE__*/ v.optional(
-    /*#__PURE__*/ v.literal("org.blocknote.schema#link"),
-  ),
+  $type: /*#__PURE__*/ v.optional(/*#__PURE__*/ v.literal("org.blocknote.schema#link")),
   /**
    * The styled text spans that make up the link text.
    */
@@ -68,15 +58,11 @@ const _linkSchema = /*#__PURE__*/ v.object({
    * @maxLength 128
    */
   type: /*#__PURE__*/ v.optional(
-    /*#__PURE__*/ v.constrain(/*#__PURE__*/ v.string(), [
-      /*#__PURE__*/ v.stringLength(0, 128),
-    ]),
+    /*#__PURE__*/ v.constrain(/*#__PURE__*/ v.string(), [/*#__PURE__*/ v.stringLength(0, 128)]),
   ),
 });
 const _styledTextSchema = /*#__PURE__*/ v.object({
-  $type: /*#__PURE__*/ v.optional(
-    /*#__PURE__*/ v.literal("org.blocknote.schema#styledText"),
-  ),
+  $type: /*#__PURE__*/ v.optional(/*#__PURE__*/ v.literal("org.blocknote.schema#styledText")),
   /**
    * Formatting styles applied to this text span.
    */
@@ -95,27 +81,19 @@ const _styledTextSchema = /*#__PURE__*/ v.object({
    * @maxLength 128
    */
   type: /*#__PURE__*/ v.optional(
-    /*#__PURE__*/ v.constrain(/*#__PURE__*/ v.string(), [
-      /*#__PURE__*/ v.stringLength(0, 128),
-    ]),
+    /*#__PURE__*/ v.constrain(/*#__PURE__*/ v.string(), [/*#__PURE__*/ v.stringLength(0, 128)]),
   ),
 });
 const _stylesSchema = /*#__PURE__*/ v.object({
-  $type: /*#__PURE__*/ v.optional(
-    /*#__PURE__*/ v.literal("org.blocknote.schema#styles"),
-  ),
+  $type: /*#__PURE__*/ v.optional(/*#__PURE__*/ v.literal("org.blocknote.schema#styles")),
 });
 const _tableCellSchema = /*#__PURE__*/ v.object({
-  $type: /*#__PURE__*/ v.optional(
-    /*#__PURE__*/ v.literal("org.blocknote.schema#tableCell"),
-  ),
+  $type: /*#__PURE__*/ v.optional(/*#__PURE__*/ v.literal("org.blocknote.schema#tableCell")),
   /**
    * The inline content within this cell.
    */
   get content() {
-    return /*#__PURE__*/ v.array(
-      /*#__PURE__*/ v.variant([linkSchema, styledTextSchema]),
-    );
+    return /*#__PURE__*/ v.array(/*#__PURE__*/ v.variant([linkSchema, styledTextSchema]));
   },
   get props() {
     return /*#__PURE__*/ v.optional(tableCellPropsSchema);
@@ -125,41 +103,31 @@ const _tableCellSchema = /*#__PURE__*/ v.object({
    * @maxLength 128
    */
   type: /*#__PURE__*/ v.optional(
-    /*#__PURE__*/ v.constrain(/*#__PURE__*/ v.string(), [
-      /*#__PURE__*/ v.stringLength(0, 128),
-    ]),
+    /*#__PURE__*/ v.constrain(/*#__PURE__*/ v.string(), [/*#__PURE__*/ v.stringLength(0, 128)]),
   ),
 });
 const _tableCellPropsSchema = /*#__PURE__*/ v.object({
-  $type: /*#__PURE__*/ v.optional(
-    /*#__PURE__*/ v.literal("org.blocknote.schema#tableCellProps"),
-  ),
+  $type: /*#__PURE__*/ v.optional(/*#__PURE__*/ v.literal("org.blocknote.schema#tableCellProps")),
   /**
    * Cell background color. 'default' uses the inherited/theme color.
    * @maxLength 64
    */
   backgroundColor: /*#__PURE__*/ v.optional(
-    /*#__PURE__*/ v.constrain(/*#__PURE__*/ v.string(), [
-      /*#__PURE__*/ v.stringLength(0, 64),
-    ]),
+    /*#__PURE__*/ v.constrain(/*#__PURE__*/ v.string(), [/*#__PURE__*/ v.stringLength(0, 64)]),
   ),
   /**
    * Number of columns this cell spans.
    * @minimum 1
    */
   colspan: /*#__PURE__*/ v.optional(
-    /*#__PURE__*/ v.constrain(/*#__PURE__*/ v.integer(), [
-      /*#__PURE__*/ v.integerRange(1),
-    ]),
+    /*#__PURE__*/ v.constrain(/*#__PURE__*/ v.integer(), [/*#__PURE__*/ v.integerRange(1)]),
   ),
   /**
    * Number of rows this cell spans.
    * @minimum 1
    */
   rowspan: /*#__PURE__*/ v.optional(
-    /*#__PURE__*/ v.constrain(/*#__PURE__*/ v.integer(), [
-      /*#__PURE__*/ v.integerRange(1),
-    ]),
+    /*#__PURE__*/ v.constrain(/*#__PURE__*/ v.integer(), [/*#__PURE__*/ v.integerRange(1)]),
   ),
   /**
    * Text alignment within the cell.
@@ -167,9 +135,7 @@ const _tableCellPropsSchema = /*#__PURE__*/ v.object({
    */
   textAlignment: /*#__PURE__*/ v.optional(
     /*#__PURE__*/ v.constrain(
-      /*#__PURE__*/ v.string<
-        "center" | "justify" | "left" | "right" | (string & {})
-      >(),
+      /*#__PURE__*/ v.string<"center" | "justify" | "left" | "right" | (string & {})>(),
       [/*#__PURE__*/ v.stringLength(0, 32)],
     ),
   ),
@@ -178,21 +144,15 @@ const _tableCellPropsSchema = /*#__PURE__*/ v.object({
    * @maxLength 64
    */
   textColor: /*#__PURE__*/ v.optional(
-    /*#__PURE__*/ v.constrain(/*#__PURE__*/ v.string(), [
-      /*#__PURE__*/ v.stringLength(0, 64),
-    ]),
+    /*#__PURE__*/ v.constrain(/*#__PURE__*/ v.string(), [/*#__PURE__*/ v.stringLength(0, 64)]),
   ),
 });
 const _tableContentSchema = /*#__PURE__*/ v.object({
-  $type: /*#__PURE__*/ v.optional(
-    /*#__PURE__*/ v.literal("org.blocknote.schema#tableContent"),
-  ),
+  $type: /*#__PURE__*/ v.optional(/*#__PURE__*/ v.literal("org.blocknote.schema#tableContent")),
   /**
    * Width of each column in the table.
    */
-  columnWidths: /*#__PURE__*/ v.optional(
-    /*#__PURE__*/ v.array(/*#__PURE__*/ v.integer()),
-  ),
+  columnWidths: /*#__PURE__*/ v.optional(/*#__PURE__*/ v.array(/*#__PURE__*/ v.integer())),
   /**
    * Number of header columns on the left of the table.
    */
@@ -210,9 +170,7 @@ const _tableContentSchema = /*#__PURE__*/ v.object({
   type: /*#__PURE__*/ v.optional(/*#__PURE__*/ v.literal("tableContent")),
 });
 const _tableRowSchema = /*#__PURE__*/ v.object({
-  $type: /*#__PURE__*/ v.optional(
-    /*#__PURE__*/ v.literal("org.blocknote.schema#tableRow"),
-  ),
+  $type: /*#__PURE__*/ v.optional(/*#__PURE__*/ v.literal("org.blocknote.schema#tableRow")),
   /**
    * The cells in this row.
    */
@@ -244,8 +202,7 @@ export const linkSchema = _linkSchema as linkSchema;
 export const styledTextSchema = _styledTextSchema as styledTextSchema;
 export const stylesSchema = _stylesSchema as stylesSchema;
 export const tableCellSchema = _tableCellSchema as tableCellSchema;
-export const tableCellPropsSchema =
-  _tableCellPropsSchema as tableCellPropsSchema;
+export const tableCellPropsSchema = _tableCellPropsSchema as tableCellPropsSchema;
 export const tableContentSchema = _tableContentSchema as tableContentSchema;
 export const tableRowSchema = _tableRowSchema as tableRowSchema;
 
@@ -254,8 +211,6 @@ export interface Link extends v.InferInput<typeof linkSchema> {}
 export interface StyledText extends v.InferInput<typeof styledTextSchema> {}
 export interface Styles extends v.InferInput<typeof stylesSchema> {}
 export interface TableCell extends v.InferInput<typeof tableCellSchema> {}
-export interface TableCellProps extends v.InferInput<
-  typeof tableCellPropsSchema
-> {}
+export interface TableCellProps extends v.InferInput<typeof tableCellPropsSchema> {}
 export interface TableContent extends v.InferInput<typeof tableContentSchema> {}
 export interface TableRow extends v.InferInput<typeof tableRowSchema> {}

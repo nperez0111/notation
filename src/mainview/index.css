@@ -7,144 +7,144 @@
    --------------------------------------------------------------------------- */
 :root,
 [data-theme="dark"] {
-	/* Surfaces */
-	--color-bg: #0f0f0f;
-	--color-surface: #1a1a1a;
-	--color-surface-elevated: #242424;
-	--color-surface-hover: #2a2a2a;
-	--color-surface-active: #333333;
+  /* Surfaces */
+  --color-bg: #0f0f0f;
+  --color-surface: #1a1a1a;
+  --color-surface-elevated: #242424;
+  --color-surface-hover: #2a2a2a;
+  --color-surface-active: #333333;
 
-	/* Text */
-	--color-text: #f0f0f0;
-	--color-text-muted: #a0a0a0;
-	--color-text-subtle: #6b6b6b;
+  /* Text */
+  --color-text: #f0f0f0;
+  --color-text-muted: #a0a0a0;
+  --color-text-subtle: #6b6b6b;
 
-	/* Borders */
-	--color-border: #2e2e2e;
-	--color-border-strong: #404040;
+  /* Borders */
+  --color-border: #2e2e2e;
+  --color-border-strong: #404040;
 
-	/* Accent (actions, selection) */
-	--color-accent: #6366f1;
-	--color-accent-hover: #818cf8;
-	--color-accent-muted: rgba(99, 102, 241, 0.2);
-	--color-accent-text: #e0e7ff;
+  /* Accent (actions, selection) */
+  --color-accent: #6366f1;
+  --color-accent-hover: #818cf8;
+  --color-accent-muted: rgba(99, 102, 241, 0.2);
+  --color-accent-text: #e0e7ff;
 
-	/* Drag-drop: drop-onto target (parent = row, child = nested rows) */
-	--color-drop-target-parent: rgba(99, 102, 241, 0.28);
-	--color-drop-target-child: rgba(99, 102, 241, 0.12);
+  /* Drag-drop: drop-onto target (parent = row, child = nested rows) */
+  --color-drop-target-parent: rgba(99, 102, 241, 0.28);
+  --color-drop-target-child: rgba(99, 102, 241, 0.12);
 
-	/* Semantic */
-	--color-success: #22c55e;
-	--color-danger: #ef4444;
+  /* Semantic */
+  --color-success: #22c55e;
+  --color-danger: #ef4444;
 
-	/* Typography */
-	--font-sans: "Inter", "SF Pro Display", -apple-system, BlinkMacSystemFont,
-		"Segoe UI", Roboto, sans-serif;
-	--radius: 6px;
-	--radius-sm: 4px;
+  /* Typography */
+  --font-sans:
+    "Inter", "SF Pro Display", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --radius: 6px;
+  --radius-sm: 4px;
 }
 
 [data-theme="light"] {
-	--color-bg: #fafafa;
-	--color-surface: #ffffff;
-	--color-surface-elevated: #f5f5f5;
-	--color-surface-hover: #eeeeee;
-	--color-surface-active: #e0e0e0;
+  --color-bg: #fafafa;
+  --color-surface: #ffffff;
+  --color-surface-elevated: #f5f5f5;
+  --color-surface-hover: #eeeeee;
+  --color-surface-active: #e0e0e0;
 
-	--color-text: #171717;
-	--color-text-muted: #525252;
-	--color-text-subtle: #737373;
+  --color-text: #171717;
+  --color-text-muted: #525252;
+  --color-text-subtle: #737373;
 
-	--color-border: #e5e5e5;
-	--color-border-strong: #d4d4d4;
+  --color-border: #e5e5e5;
+  --color-border-strong: #d4d4d4;
 
-	--color-accent: #6366f1;
-	--color-accent-hover: #4f46e5;
-	--color-accent-muted: rgba(99, 102, 241, 0.15);
-	--color-accent-text: #312e81;
+  --color-accent: #6366f1;
+  --color-accent-hover: #4f46e5;
+  --color-accent-muted: rgba(99, 102, 241, 0.15);
+  --color-accent-text: #312e81;
 
-	--color-drop-target-parent: rgba(99, 102, 241, 0.22);
-	--color-drop-target-child: rgba(99, 102, 241, 0.1);
+  --color-drop-target-parent: rgba(99, 102, 241, 0.22);
+  --color-drop-target-child: rgba(99, 102, 241, 0.1);
 
-	--color-success: #16a34a;
-	--color-danger: #dc2626;
+  --color-success: #16a34a;
+  --color-danger: #dc2626;
 }
 
 @layer base {
-	body {
-		@apply antialiased;
-		background-color: var(--color-bg);
-		color: var(--color-text);
-		font-family: var(--font-sans);
-	}
+  body {
+    @apply antialiased;
+    background-color: var(--color-bg);
+    color: var(--color-text);
+    font-family: var(--font-sans);
+  }
 
-	a {
-		color: var(--color-accent);
-	}
+  a {
+    color: var(--color-accent);
+  }
 
-	a:hover {
-		color: var(--color-accent-hover);
-	}
+  a:hover {
+    color: var(--color-accent-hover);
+  }
 }
 
 /* BlockNote theme: override CSS variables to match our palette.
    See https://www.blocknotejs.org/docs/react/styling-theming/themes */
 .bn-container[data-color-scheme="dark"],
 .bn-container[data-color-scheme="light"] {
-	--bn-colors-editor-text: var(--color-text);
-	--bn-colors-editor-background: var(--color-surface-elevated);
-	--bn-colors-menu-text: var(--color-text);
-	--bn-colors-menu-background: var(--color-surface-elevated);
-	--bn-colors-tooltip-text: var(--color-text);
-	--bn-colors-tooltip-background: var(--color-surface-elevated);
-	--bn-colors-hovered-text: var(--color-text);
-	--bn-colors-hovered-background: var(--color-surface-hover);
-	--bn-colors-selected-text: var(--color-accent-text);
-	--bn-colors-selected-background: var(--color-accent);
-	--bn-colors-disabled-text: var(--color-text-subtle);
-	--bn-colors-disabled-background: var(--color-surface);
-	--bn-colors-shadow: var(--color-border-strong);
-	--bn-colors-border: var(--color-border);
-	--bn-colors-side-menu: var(--color-text-subtle);
-	--bn-font-family: var(--font-sans);
-	--bn-border-radius: var(--radius);
+  --bn-colors-editor-text: var(--color-text);
+  --bn-colors-editor-background: var(--color-surface-elevated);
+  --bn-colors-menu-text: var(--color-text);
+  --bn-colors-menu-background: var(--color-surface-elevated);
+  --bn-colors-tooltip-text: var(--color-text);
+  --bn-colors-tooltip-background: var(--color-surface-elevated);
+  --bn-colors-hovered-text: var(--color-text);
+  --bn-colors-hovered-background: var(--color-surface-hover);
+  --bn-colors-selected-text: var(--color-accent-text);
+  --bn-colors-selected-background: var(--color-accent);
+  --bn-colors-disabled-text: var(--color-text-subtle);
+  --bn-colors-disabled-background: var(--color-surface);
+  --bn-colors-shadow: var(--color-border-strong);
+  --bn-colors-border: var(--color-border);
+  --bn-colors-side-menu: var(--color-text-subtle);
+  --bn-font-family: var(--font-sans);
+  --bn-border-radius: var(--radius);
 }
 
 /* Force .bn-editor background to match pane (overrides BlockNote default) */
 .bn-editor {
-	background-color: var(--color-surface-elevated) !important;
+  background-color: var(--color-surface-elevated) !important;
 }
 
 /* Notion-like properties section */
 .properties-section [data-notion-row]:hover {
-	background-color: rgba(255, 255, 255, 0.02);
+  background-color: rgba(255, 255, 255, 0.02);
 }
 .properties-section input::placeholder {
-	color: var(--color-text-subtle);
+  color: var(--color-text-subtle);
 }
 .properties-section input[type="date"],
 .properties-section input[type="time"],
 .properties-section input[type="number"] {
-	color-scheme: dark;
+  color-scheme: dark;
 }
 
 /* Theme applied on root so portaled content (Base Web, etc.) inherits */
 html[data-theme="light"] {
-	color-scheme: light;
+  color-scheme: light;
 }
 html[data-theme="dark"],
 html:not([data-theme]) {
-	color-scheme: dark;
+  color-scheme: dark;
 }
 
 /* Menu items in portaled popovers: hover must work in shadow/portal context */
 .properties-menu-item:hover,
 .properties-submenu-item:hover {
-	background-color: var(--color-surface-hover) !important;
+  background-color: var(--color-surface-hover) !important;
 }
 .properties-menu-item {
-	background-color: transparent;
+  background-color: transparent;
 }
 .properties-submenu-item {
-	background-color: transparent;
+  background-color: transparent;
 }

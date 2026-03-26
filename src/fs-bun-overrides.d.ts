@@ -13,9 +13,5 @@ declare module "fs" {
   // The existing `rmdirSync(path: PathLike): void` from @types/node remains,
   // but this makes two-argument calls type-safe in Bun projects.
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  function rmdirSync(
-    path: import("fs").PathLike,
-    options?: BunRecursiveRmdirOptions,
-  ): void;
+  function rmdirSync(path: import("fs").PathLike, options?: BunRecursiveRmdirOptions): void;
 }
-

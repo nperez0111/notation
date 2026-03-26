@@ -1,12 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRpc } from "./electroview";
 import { useTheme } from "./themeContext";
-import type {
-  Collection,
-  Document,
-  Property,
-  SettingsInfo,
-} from "../shared/types";
+import type { Collection, Document, Property, SettingsInfo } from "../shared/types";
 import { DocumentSidebar } from "./components/documents/DocumentSidebar";
 import {
   buildDocumentTree,
@@ -25,9 +20,7 @@ export default function App() {
   const { theme, setTheme, resolved: resolvedTheme } = useTheme();
   const [collections, setCollections] = useState<Collection[]>([]);
   const [documents, setDocuments] = useState<Document[]>([]);
-  const [propertyDefinitions, setPropertyDefinitions] = useState<Property[]>(
-    [],
-  );
+  const [propertyDefinitions, setPropertyDefinitions] = useState<Property[]>([]);
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [currentDoc, setCurrentDoc] = useState<Document | null>(null);
   const [loading, setLoading] = useState(true);
@@ -40,24 +33,20 @@ export default function App() {
     setSelectedId(null);
     setCurrentDoc(null);
     setPropertyDefinitions([]);
-    Promise.all([
-      rpc.getCollections({}),
-      rpc.getDocuments({}),
-      rpc.getSettings({}),
-    ]).then(([colls, list, s]) => {
-      setCollections(colls);
-      setDocuments(list);
-      setSettings(s);
-      if (s.sidebarWidth != null) setSidebarWidth(s.sidebarWidth);
-      setLoading(false);
-      if (list.length > 0) {
-        const firstId = list[0].id;
-        setSelectedId(firstId);
-        rpc
-          .getDocument({ id: firstId })
-          .then((doc) => setCurrentDoc(doc ?? null));
-      }
-    });
+    void Promise.all([rpc.getCollections({}), rpc.getDocuments({}), rpc.getSettings({})]).then(
+      ([colls, list, s]) => {
+        setCollections(colls);
+        setDocuments(list);
+        setSettings(s);
+        if (s.sidebarWidth != null) setSidebarWidth(s.sidebarWidth);
+        setLoading(false);
+        if (list.length > 0) {
+          const firstId = list[0].id;
+          setSelectedId(firstId);
+          void rpc.getDocument({ id: firstId }).then((doc) => setCurrentDoc(doc ?? null));
+        }
+      },
+    );
   }, [rpc]);
 
   const onSwitchDatabase = useCallback(
@@ -91,22 +80,24 @@ export default function App() {
   }, []);
 
   // Load property definitions for the current document's collection.
+  const currentDocId = currentDoc?.id;
+  const currentCollectionId = currentDoc?.collectionId;
   useEffect(() => {
-    if (!currentDoc) {
+    if (!currentCollectionId) {
       setPropertyDefinitions([]);
       return;
     }
-    rpc
-      .getPropertyDefinitions({ collectionId: currentDoc.collectionId })
+    void rpc
+      .getPropertyDefinitions({ collectionId: currentCollectionId })
       .then(setPropertyDefinitions);
-  }, [currentDoc?.id, currentDoc?.collectionId, rpc]);
+  }, [currentDocId, currentCollectionId, rpc]);
 
   // When user selects a document, load it (no useEffect: run in the callback).
   const onSelectDocument = useCallback(
     (id: number) => {
       setSelectedId(id);
       setCurrentDoc(null);
-      rpc.getDocument({ id }).then((doc) => setCurrentDoc(doc ?? null));
+      void rpc.getDocument({ id }).then((doc) => setCurrentDoc(doc ?? null));
     },
     [rpc],
   );
@@ -138,9 +129,7 @@ export default function App() {
         const next = list.length > 0 ? list[0].id : null;
         setSelectedId(next);
         if (next != null) {
-          rpc
-            .getDocument({ id: next })
-            .then((doc) => setCurrentDoc(doc ?? null));
+          void rpc.getDocument({ id: next }).then((doc) => setCurrentDoc(doc ?? null));
         } else {
           setCurrentDoc(null);
         }
@@ -164,11 +153,7 @@ export default function App() {
   );
 
   const onSaveDocument = useCallback(
-    async (payload: {
-      content: string;
-      title?: string;
-      properties?: string;
-    }) => {
+    async (payload: { content: string; title?: string; properties?: string }) => {
       if (currentDoc == null) return;
       const updated = await rpc.updateDocument({
         id: currentDoc.id,
@@ -184,9 +169,7 @@ export default function App() {
         updatedAt: updated.updatedAt ?? new Date().toISOString(),
       };
       setCurrentDoc(next);
-      setDocuments((prev) =>
-        prev.map((d) => (d.id === currentDoc.id ? next : d)),
-      );
+      setDocuments((prev) => prev.map((d) => (d.id === currentDoc.id ? next : d)));
     },
     [currentDoc, rpc],
   );
@@ -219,10 +202,7 @@ export default function App() {
       // No-op if move would make the document its own ancestor (parent into itself or into a descendant)
       const byParent = buildDocumentTree(documents, collectionId);
       const descendantsOfSource = getDescendantIds(byParent, documentId);
-      if (
-        parentId !== null &&
-        (parentId === documentId || descendantsOfSource.has(parentId))
-      ) {
+      if (parentId !== null && (parentId === documentId || descendantsOfSource.has(parentId))) {
         return;
       }
       const updated = await rpc.updateDocument({
@@ -281,9 +261,7 @@ export default function App() {
     async (id: number, label?: string, type?: Property["type"]) => {
       const updated = await rpc.updatePropertyDefinition({ id, label, type });
       if (!updated) return;
-      setPropertyDefinitions((prev) =>
-        prev.map((p) => (p.id === id ? updated : p)),
-      );
+      setPropertyDefinitions((prev) => prev.map((p) => (p.id === id ? updated : p)));
     },
     [rpc],
   );
@@ -318,10 +296,7 @@ export default function App() {
   );
 
   const currentCollection = useMemo(
-    () =>
-      currentDoc
-        ? (collections.find((c) => c.id === currentDoc.collectionId) ?? null)
-        : null,
+    () => (currentDoc ? (collections.find((c) => c.id === currentDoc.collectionId) ?? null) : null),
     [currentDoc, collections],
   );
 
@@ -358,8 +333,7 @@ export default function App() {
       setDocuments((prev) =>
         prev.map((d) => {
           const i = orderedIds.indexOf(d.id);
-          if (i >= 0 && d.parentId === currentDoc.id)
-            return { ...d, childOrder: i };
+          if (i >= 0 && d.parentId === currentDoc.id) return { ...d, childOrder: i };
           return d;
         }),
       );
@@ -405,9 +379,9 @@ export default function App() {
             <p>No notes yet.</p>
             <button
               type="button"
-              onClick={() =>
-                collections[0] && onCreateDocument(collections[0].id, null)
-              }
+              onClick={() => {
+                if (collections[0]) void onCreateDocument(collections[0].id, null);
+              }}
               className="text-accent hover:underline"
               disabled={collections.length === 0}
             >
@@ -426,9 +400,7 @@ export default function App() {
               initialBlocks={parseDocumentContent(currentDoc.content)}
               initialTitle={currentDoc.title ?? ""}
               initialIcon={currentDoc.icon ?? null}
-              initialPropertyValues={parseDocumentProperties(
-                currentDoc.properties ?? "{}",
-              )}
+              initialPropertyValues={parseDocumentProperties(currentDoc.properties ?? "{}")}
               propertyDefinitions={propertyDefinitions}
               theme={resolvedTheme}
               contextCollectionName={currentCollection?.name}

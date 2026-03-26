@@ -36,7 +36,10 @@
         "props": { "type": "ref", "ref": "#defaultBlockProps" },
         "inlineContent": {
           "type": "array",
-          "items": { "type": "union", "refs": ["org.blocknote.schema#styledText", "org.blocknote.schema#link"] }
+          "items": {
+            "type": "union",
+            "refs": ["org.blocknote.schema#styledText", "org.blocknote.schema#link"]
+          }
         },
         "children": {
           "type": "array",
@@ -55,7 +58,10 @@
         "props": { "type": "ref", "ref": "#headingProps" },
         "inlineContent": {
           "type": "array",
-          "items": { "type": "union", "refs": ["org.blocknote.schema#styledText", "org.blocknote.schema#link"] }
+          "items": {
+            "type": "union",
+            "refs": ["org.blocknote.schema#styledText", "org.blocknote.schema#link"]
+          }
         },
         "children": {
           "type": "array",
@@ -107,7 +113,10 @@
         "props": { "type": "ref", "ref": "#quoteProps" },
         "inlineContent": {
           "type": "array",
-          "items": { "type": "union", "refs": ["org.blocknote.schema#styledText", "org.blocknote.schema#link"] }
+          "items": {
+            "type": "union",
+            "refs": ["org.blocknote.schema#styledText", "org.blocknote.schema#link"]
+          }
         },
         "children": {
           "type": "array",
@@ -142,7 +151,10 @@
         "props": { "type": "ref", "ref": "#codeBlockProps" },
         "inlineContent": {
           "type": "array",
-          "items": { "type": "union", "refs": ["org.blocknote.schema#styledText", "org.blocknote.schema#link"] }
+          "items": {
+            "type": "union",
+            "refs": ["org.blocknote.schema#styledText", "org.blocknote.schema#link"]
+          }
         },
         "children": {
           "type": "array",
@@ -172,7 +184,10 @@
         "props": { "type": "ref", "ref": "#defaultBlockProps" },
         "inlineContent": {
           "type": "array",
-          "items": { "type": "union", "refs": ["org.blocknote.schema#styledText", "org.blocknote.schema#link"] }
+          "items": {
+            "type": "union",
+            "refs": ["org.blocknote.schema#styledText", "org.blocknote.schema#link"]
+          }
         },
         "children": {
           "type": "array",
@@ -191,7 +206,10 @@
         "props": { "type": "ref", "ref": "#numberedListItemProps" },
         "inlineContent": {
           "type": "array",
-          "items": { "type": "union", "refs": ["org.blocknote.schema#styledText", "org.blocknote.schema#link"] }
+          "items": {
+            "type": "union",
+            "refs": ["org.blocknote.schema#styledText", "org.blocknote.schema#link"]
+          }
         },
         "children": {
           "type": "array",
@@ -236,7 +254,10 @@
         "props": { "type": "ref", "ref": "#checkListItemProps" },
         "inlineContent": {
           "type": "array",
-          "items": { "type": "union", "refs": ["org.blocknote.schema#styledText", "org.blocknote.schema#link"] }
+          "items": {
+            "type": "union",
+            "refs": ["org.blocknote.schema#styledText", "org.blocknote.schema#link"]
+          }
         },
         "children": {
           "type": "array",
@@ -281,7 +302,10 @@
         "props": { "type": "ref", "ref": "#defaultBlockProps" },
         "inlineContent": {
           "type": "array",
-          "items": { "type": "union", "refs": ["org.blocknote.schema#styledText", "org.blocknote.schema#link"] }
+          "items": {
+            "type": "union",
+            "refs": ["org.blocknote.schema#styledText", "org.blocknote.schema#link"]
+          }
         },
         "children": {
           "type": "array",

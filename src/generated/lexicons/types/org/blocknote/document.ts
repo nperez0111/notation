@@ -4,9 +4,7 @@ import type {} from "@atcute/lexicons/ambient";
 import * as OrgBlocknoteSchema from "./schema.js";
 
 const _contentSchema = /*#__PURE__*/ v.object({
-  $type: /*#__PURE__*/ v.optional(
-    /*#__PURE__*/ v.literal("org.blocknote.document#content"),
-  ),
+  $type: /*#__PURE__*/ v.optional(/*#__PURE__*/ v.literal("org.blocknote.document#content")),
   /**
    * The document body as an ordered array of blocks.
    */
@@ -58,16 +56,12 @@ const _schemaDeclarationSchema = /*#__PURE__*/ v.object({
   },
 });
 const _schemaEntrySchema = /*#__PURE__*/ v.object({
-  $type: /*#__PURE__*/ v.optional(
-    /*#__PURE__*/ v.literal("org.blocknote.document#schemaEntry"),
-  ),
+  $type: /*#__PURE__*/ v.optional(/*#__PURE__*/ v.literal("org.blocknote.document#schemaEntry")),
   /**
    * The type identifier (e.g., 'org.blocknote.defaultBlocks#paragraph').
    * @maxLength 256
    */
-  id: /*#__PURE__*/ v.constrain(/*#__PURE__*/ v.string(), [
-    /*#__PURE__*/ v.stringLength(0, 256),
-  ]),
+  id: /*#__PURE__*/ v.constrain(/*#__PURE__*/ v.string(), [/*#__PURE__*/ v.stringLength(0, 256)]),
 });
 
 type content$schematype = typeof _contentSchema;
@@ -82,15 +76,12 @@ export interface schemaEntrySchema extends schemaEntry$schematype {}
 
 export const contentSchema = _contentSchema as contentSchema;
 export const mainSchema = _mainSchema as mainSchema;
-export const schemaDeclarationSchema =
-  _schemaDeclarationSchema as schemaDeclarationSchema;
+export const schemaDeclarationSchema = _schemaDeclarationSchema as schemaDeclarationSchema;
 export const schemaEntrySchema = _schemaEntrySchema as schemaEntrySchema;
 
 export interface Content extends v.InferInput<typeof contentSchema> {}
 export interface Main extends v.InferInput<typeof mainSchema> {}
-export interface SchemaDeclaration extends v.InferInput<
-  typeof schemaDeclarationSchema
-> {}
+export interface SchemaDeclaration extends v.InferInput<typeof schemaDeclarationSchema> {}
 export interface SchemaEntry extends v.InferInput<typeof schemaEntrySchema> {}
 
 declare module "@atcute/lexicons/ambient" {
