@@ -2,7 +2,7 @@ import type { ElectrobunConfig } from "electrobun";
 
 export default {
 	app: {
-		name: "react-tailwind-vite",
+		name: "note-taker",
 		identifier: "reacttailwindvite.electrobun.dev",
 		version: "0.0.1",
 	},

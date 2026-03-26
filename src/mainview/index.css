@@ -77,6 +77,14 @@
 		color: var(--color-text);
 		font-family: var(--font-sans);
 	}
+
+	a {
+		color: var(--color-accent);
+	}
+
+	a:hover {
+		color: var(--color-accent-hover);
+	}
 }
 
 /* BlockNote theme: override CSS variables to match our palette.

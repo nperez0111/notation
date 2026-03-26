@@ -3,7 +3,13 @@ import { useCreateBlockNote } from "@blocknote/react";
 import { BlockNoteView } from "@blocknote/mantine";
 import "@blocknote/core/fonts/inter.css";
 import "@blocknote/mantine/style.css";
-import type { Block, PartialBlock } from "@blocknote/core";
+import {
+  BlockNoteSchema,
+  createCodeBlockSpec,
+  type Block,
+  type PartialBlock,
+} from "@blocknote/core";
+import { codeBlockOptions } from "@blocknote/code-block";
 import type {
   Document,
   DocumentIcon,
@@ -16,6 +22,12 @@ import { PropertiesBar } from "./PropertiesBar";
 import { ChildDocumentsSection } from "./ChildDocumentsSection";
 
 const SAVE_DELAY_MS = 500;
+
+const schema = BlockNoteSchema.create().extend({
+  blockSpecs: {
+    codeBlock: createCodeBlockSpec(codeBlockOptions),
+  },
+});
 
 type DocumentEditorProps = {
   initialBlocks: PartialBlock[] | undefined;
@@ -72,7 +84,10 @@ export function DocumentEditor({
     initialPropertyValues,
   );
 
-  const editor = useCreateBlockNote({ initialContent: initialBlocks });
+  const editor = useCreateBlockNote({
+    initialContent: initialBlocks,
+    schema,
+  });
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const titleRef = useRef(title);
   const propertyValuesRef = useRef(propertyValues);

@@ -16,6 +16,7 @@ type DocumentSidebarProps = {
 	onCreateCollection?: () => void;
 	onRenameCollection?: (id: number, name: string) => void;
 	onIconChange?: (documentId: number, icon: Document["icon"]) => void;
+	onDeleteDocument?: (id: number) => void;
 	onReparentDocument?: (documentId: number, collectionId: number, parentId: number | null) => void;
 	onOpenSettings?: () => void;
 	onSwitchDatabase?: (directory: string) => void;
@@ -56,6 +57,7 @@ export function DocumentSidebar({
 	onCreateCollection,
 	onRenameCollection,
 	onIconChange,
+	onDeleteDocument,
 	onReparentDocument,
 	onOpenSettings,
 	onSwitchDatabase,
@@ -91,6 +93,7 @@ export function DocumentSidebar({
 					onCreateCollection={onCreateCollection}
 					onRenameCollection={onRenameCollection}
 					onIconChange={onIconChange}
+					onDeleteDocument={onDeleteDocument}
 					onReparentDocument={onReparentDocument}
 				/>
 			</div>

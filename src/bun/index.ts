@@ -355,10 +355,21 @@ const documentRPC = BrowserView.defineRPC<DocumentRPC>({
         return updated ?? null;
       },
       deleteDocument: ({ id }) => {
+        // Cascade delete: collect all descendant ids then delete them all
+        const stack = [id];
+        const toDelete: number[] = [];
+        while (stack.length > 0) {
+          const current = stack.pop()!;
+          toDelete.push(current);
+          const children = dbState.db
+            .prepare("SELECT id FROM documents WHERE parent_id = ?")
+            .all(current) as { id: number }[];
+          for (const child of children) stack.push(child.id);
+        }
+        const placeholders = toDelete.map(() => "?").join(",");
         dbState.db
-          .prepare("UPDATE documents SET parent_id = NULL WHERE parent_id = ?")
-          .run(id);
-        dbState.deleteDocumentStmt.run(id);
+          .prepare(`DELETE FROM documents WHERE id IN (${placeholders})`)
+          .run(...toDelete);
         return { success: true };
       },
       getPropertyDefinitions: ({ collectionId }) =>

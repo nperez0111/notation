@@ -128,6 +128,27 @@ export default function App() {
     [rpc, onSelectDocument],
   );
 
+  const onDeleteDocument = useCallback(
+    async (id: number) => {
+      await rpc.deleteDocument({ id });
+      // Re-fetch documents since children get cascade-deleted
+      const list = await rpc.getDocuments({});
+      setDocuments(list);
+      if (selectedId === id) {
+        const next = list.length > 0 ? list[0].id : null;
+        setSelectedId(next);
+        if (next != null) {
+          rpc
+            .getDocument({ id: next })
+            .then((doc) => setCurrentDoc(doc ?? null));
+        } else {
+          setCurrentDoc(null);
+        }
+      }
+    },
+    [rpc, selectedId],
+  );
+
   const onCreateCollection = useCallback(async () => {
     const coll = await rpc.createCollection({ name: "New collection" });
     setCollections((prev) => [...prev, coll]);
@@ -358,6 +379,7 @@ export default function App() {
         onCreateCollection={onCreateCollection}
         onRenameCollection={onRenameCollection}
         onIconChange={onIconChange}
+        onDeleteDocument={onDeleteDocument}
         onReparentDocument={onReparentDocument}
         onOpenSettings={() => setSettingsOpen(true)}
         onSwitchDatabase={onSwitchDatabase}
