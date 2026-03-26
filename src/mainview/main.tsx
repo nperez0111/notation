@@ -10,13 +10,13 @@ import App from "./App";
 const styletron = new Styletron();
 
 createRoot(document.getElementById("root")!).render(
-	<StrictMode>
-		<StyletronProvider value={styletron}>
-			<ThemeProvider>
-				<RpcProvider>
-					<App />
-				</RpcProvider>
-			</ThemeProvider>
-		</StyletronProvider>
-	</StrictMode>,
+  <StrictMode>
+    <StyletronProvider value={styletron}>
+      <ThemeProvider>
+        <RpcProvider>
+          <App />
+        </RpcProvider>
+      </ThemeProvider>
+    </StyletronProvider>
+  </StrictMode>,
 );

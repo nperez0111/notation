@@ -43,20 +43,16 @@ type DocumentEditorProps = {
     content: string;
     title?: string;
     properties?: string;
-  }) => void;
-  onIconChange: (documentId: number, icon: DocumentIcon) => void;
+  }) => void | Promise<void>;
+  onIconChange: (documentId: number, icon: DocumentIcon) => void | Promise<void>;
   documentId: number;
   onCreateProperty: (label: string, type: Property["type"]) => Promise<void>;
-  onUpdateProperty: (
-    id: number,
-    label?: string,
-    type?: Property["type"],
-  ) => Promise<void>;
+  onUpdateProperty: (id: number, label?: string, type?: Property["type"]) => Promise<void>;
   onDeleteProperty: (id: number) => Promise<void>;
   onReorderProperties: (orderedIds: number[]) => Promise<void>;
   /** Child documents of the current doc (in display order). Shown after properties. */
   childDocuments?: Document[];
-  onReorderChildDocuments?: (orderedIds: number[]) => void;
+  onReorderChildDocuments?: (orderedIds: number[]) => void | Promise<void>;
 };
 
 export function DocumentEditor({
@@ -80,9 +76,8 @@ export function DocumentEditor({
   onReorderChildDocuments,
 }: DocumentEditorProps) {
   const [title, setTitle] = useState(initialTitle);
-  const [propertyValues, setPropertyValues] = useState<DocumentPropertyValues>(
-    initialPropertyValues,
-  );
+  const [propertyValues, setPropertyValues] =
+    useState<DocumentPropertyValues>(initialPropertyValues);
 
   const editor = useCreateBlockNote({
     initialContent: initialBlocks,
@@ -99,7 +94,7 @@ export function DocumentEditor({
     timerRef.current = setTimeout(() => {
       timerRef.current = null;
       if (!editor) return;
-      onSave({
+      void onSave({
         content: JSON.stringify(editor.document as Block[]),
         title: titleRef.current,
         properties: serializeDocumentProperties(propertyValuesRef.current),
@@ -113,7 +108,7 @@ export function DocumentEditor({
       timerRef.current = null;
     }
     if (!editor) return;
-    onSave({
+    void onSave({
       content: JSON.stringify(editor.document as Block[]),
       title: titleRef.current,
       properties: serializeDocumentProperties(propertyValuesRef.current),
@@ -122,22 +117,17 @@ export function DocumentEditor({
 
   if (!editor) {
     return (
-      <div className="flex flex-1 items-center justify-center text-text-muted">
-        Loading editor…
-      </div>
+      <div className="flex flex-1 items-center justify-center text-text-muted">Loading editor…</div>
     );
   }
 
   return (
     <>
-      {(contextCollectionName ||
-        (contextHierarchy && contextHierarchy.length > 0)) && (
+      {(contextCollectionName || (contextHierarchy && contextHierarchy.length > 0)) && (
         <div className="flex items-center justify-between bg-[var(--color-surface)]/70 px-6 py-2 text-xs text-[var(--color-text-muted)]">
           <div className="flex flex-wrap items-center gap-1.5">
             {contextCollectionName && (
-              <span className="font-medium text-[var(--color-text)]">
-                {contextCollectionName}
-              </span>
+              <span className="font-medium text-[var(--color-text)]">{contextCollectionName}</span>
             )}
             {contextHierarchy && contextHierarchy.length > 0 && (
               <>
@@ -154,11 +144,7 @@ export function DocumentEditor({
                       >
                         {label}
                       </button>
-                      {!isLastParent && (
-                        <span className="text-[var(--color-text-subtle)]">
-                          /
-                        </span>
-                      )}
+                      {!isLastParent && <span className="text-[var(--color-text-subtle)]">/</span>}
                     </span>
                   );
                 })}
@@ -174,7 +160,9 @@ export function DocumentEditor({
           scheduleSave();
         }}
         icon={initialIcon}
-        onIconChange={(icon) => onIconChange(documentId, icon)}
+        onIconChange={(icon) => {
+          void onIconChange(documentId, icon);
+        }}
       />
       <div className="mt-3 px-6">
         <PropertiesBar
@@ -193,9 +181,11 @@ export function DocumentEditor({
       </div>
       {childDocuments.length > 0 && (
         <ChildDocumentsSection
-          children={childDocuments}
+          docs={childDocuments}
           onNavigate={(id) => onNavigateToDocument?.(id)}
-          onReorder={(orderedIds) => onReorderChildDocuments?.(orderedIds)}
+          onReorder={(orderedIds) => {
+            void onReorderChildDocuments?.(orderedIds);
+          }}
         />
       )}
       <div className="mt-2 px-1 pb-1 pt-1.5">

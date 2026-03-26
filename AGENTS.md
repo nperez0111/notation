@@ -18,136 +18,148 @@ Use this file as a table of contents: **keywords → files**. Read the listed fi
 
 ## Entry points and config
 
-| Keyword | File | Notes |
-|--------|------|------|
-| **Electrobun config**, build, views | `electrobun.config.ts` | App name, build copy (dist → views/mainview), watch ignore. |
-| **Main process**, Bun, window, DB bootstrap | `src/bun/index.ts` | BrowserWindow, RPC handlers, SQLite, settings.json, `views://mainview/index.html`. |
-| **Frontend entry**, React root, providers | `src/mainview/main.tsx` | Styletron, ThemeProvider, RpcProvider, App. |
-| **Vite** | `vite.config.ts` | Bundling for mainview. |
-| **Tailwind** | `tailwind.config.js` | PostCSS in `postcss.config.js`. |
+| Keyword                                     | File                    | Notes                                                                              |
+| ------------------------------------------- | ----------------------- | ---------------------------------------------------------------------------------- |
+| **Electrobun config**, build, views         | `electrobun.config.ts`  | App name, build copy (dist → views/mainview), watch ignore.                        |
+| **Main process**, Bun, window, DB bootstrap | `src/bun/index.ts`      | BrowserWindow, RPC handlers, SQLite, settings.json, `views://mainview/index.html`. |
+| **Frontend entry**, React root, providers   | `src/mainview/main.tsx` | Styletron, ThemeProvider, RpcProvider, App.                                        |
+| **Vite**                                    | `vite.config.ts`        | Bundling for mainview.                                                             |
+| **Tailwind**                                | `tailwind.config.js`    | PostCSS in `postcss.config.js`.                                                    |
 
 ---
 
 ## Shared types and RPC
 
-| Keyword | File | Notes |
-|--------|------|------|
-| **Types**: Document, Collection, Property, SettingsInfo, DocumentRPC | `src/shared/types.ts` | Single source of truth for domain and RPC schema. |
-| **RPC client**, useRpc, RpcProvider | `src/mainview/electroview.tsx` | Electroview.defineRPC, context for `rpc.request`. |
-| **RPC handlers** (Bun side) | `src/bun/index.ts` | `BrowserView.defineRPC<DocumentRPC>` with all request handlers. |
+| Keyword                                                              | File                           | Notes                                                           |
+| -------------------------------------------------------------------- | ------------------------------ | --------------------------------------------------------------- |
+| **Types**: Document, Collection, Property, SettingsInfo, DocumentRPC | `src/shared/types.ts`          | Single source of truth for domain and RPC schema.               |
+| **RPC client**, useRpc, RpcProvider                                  | `src/mainview/electroview.tsx` | Electroview.defineRPC, context for `rpc.request`.               |
+| **RPC handlers** (Bun side)                                          | `src/bun/index.ts`             | `BrowserView.defineRPC<DocumentRPC>` with all request handlers. |
 
 ### RPC methods (`DocumentRPC`) — defined in `src/shared/types.ts`, implemented in `src/bun/index.ts`
 
 **Bun → webview** (main process calls these on the frontend):
 
-| Method | Params | Response |
-|--------|--------|----------|
-| `openSettings` | — | `void` — triggered from app menu Preferences item |
+| Method         | Params | Response                                          |
+| -------------- | ------ | ------------------------------------------------- |
+| `openSettings` | —      | `void` — triggered from app menu Preferences item |
 
 **Webview → Bun** (frontend calls these on the backend):
 
-| Method | Params | Response |
-|--------|--------|----------|
-| `getCollections` | — | `Collection[]` |
-| `getCollection` | `id` | `Collection \| null` |
-| `createCollection` | `name` | `Collection` |
-| `updateCollection` | `id, name` | `Collection \| null` |
-| `deleteCollection` | `id` | `{ success }` |
-| `getDocuments` | — | `Document[]` |
-| `getDocument` | `id` | `Document \| null` |
-| `createDocument` | `title, content, createdBy, updatedBy, collectionId, parentId?, icon?, properties?` | `Document` |
-| `updateDocument` | `id, updatedBy, title?, content?, collectionId?, parentId?, icon?, properties?` | `Document \| null` |
-| `deleteDocument` | `id` | `{ success }` |
-| `getPropertyDefinitions` | `collectionId` | `Property[]` |
-| `createPropertyDefinition` | `collectionId, label, type` | `Property` |
-| `updatePropertyDefinition` | `id, label?, type?` | `Property \| null` |
-| `deletePropertyDefinition` | `id` | `{ success }` |
-| `reorderPropertyDefinitions` | `orderedIds` | `void` |
-| `reorderChildDocuments` | `collectionId, parentId, orderedIds` | `void` |
-| `getSettings` | — | `SettingsInfo` |
-| `chooseDatabaseDirectory` | — | `string \| null` — opens OS file picker |
-| `setDatabaseLocation` | `directory, mode: "new"\|"move"` | `{ success }` |
-| `setDatabaseMetadata` | `name?, icon?` | `{ success }` |
-| `setSidebarWidth` | `width` | `{ success }` |
-| `reloadDatabase` | — | `{ success }` |
+| Method                       | Params                                                                              | Response                                |
+| ---------------------------- | ----------------------------------------------------------------------------------- | --------------------------------------- |
+| `getCollections`             | —                                                                                   | `Collection[]`                          |
+| `getCollection`              | `id`                                                                                | `Collection \| null`                    |
+| `createCollection`           | `name`                                                                              | `Collection`                            |
+| `updateCollection`           | `id, name`                                                                          | `Collection \| null`                    |
+| `deleteCollection`           | `id`                                                                                | `{ success }`                           |
+| `getDocuments`               | —                                                                                   | `Document[]`                            |
+| `getDocument`                | `id`                                                                                | `Document \| null`                      |
+| `createDocument`             | `title, content, createdBy, updatedBy, collectionId, parentId?, icon?, properties?` | `Document`                              |
+| `updateDocument`             | `id, updatedBy, title?, content?, collectionId?, parentId?, icon?, properties?`     | `Document \| null`                      |
+| `deleteDocument`             | `id`                                                                                | `{ success }`                           |
+| `getPropertyDefinitions`     | `collectionId`                                                                      | `Property[]`                            |
+| `createPropertyDefinition`   | `collectionId, label, type`                                                         | `Property`                              |
+| `updatePropertyDefinition`   | `id, label?, type?`                                                                 | `Property \| null`                      |
+| `deletePropertyDefinition`   | `id`                                                                                | `{ success }`                           |
+| `reorderPropertyDefinitions` | `orderedIds`                                                                        | `void`                                  |
+| `reorderChildDocuments`      | `collectionId, parentId, orderedIds`                                                | `void`                                  |
+| `getSettings`                | —                                                                                   | `SettingsInfo`                          |
+| `chooseDatabaseDirectory`    | —                                                                                   | `string \| null` — opens OS file picker |
+| `setDatabaseLocation`        | `directory, mode: "new"\|"move"`                                                    | `{ success }`                           |
+| `setDatabaseMetadata`        | `name?, icon?`                                                                      | `{ success }`                           |
+| `setSidebarWidth`            | `width`                                                                             | `{ success }`                           |
+| `reloadDatabase`             | —                                                                                   | `{ success }`                           |
 
 ---
 
 ## App shell and data flow
 
-| Keyword | File | Notes |
-|--------|------|------|
-| **App component**, state, document/collection CRUD | `src/mainview/App.tsx` | Collections, documents, selected doc, settings; wires sidebar + editor + settings modal. |
-| **Parse document content** (BlockNote JSON) | `src/mainview/lib/parseContent.ts` | Content string → blocks for editor. |
-| **Parse/serialize property values** | `src/mainview/lib/propertyValues.ts` | Document properties JSON ↔ `DocumentPropertyValues`. |
+| Keyword                                            | File                                 | Notes                                                                                    |
+| -------------------------------------------------- | ------------------------------------ | ---------------------------------------------------------------------------------------- |
+| **App component**, state, document/collection CRUD | `src/mainview/App.tsx`               | Collections, documents, selected doc, settings; wires sidebar + editor + settings modal. |
+| **Parse document content** (BlockNote JSON)        | `src/mainview/lib/parseContent.ts`   | Content string → blocks for editor.                                                      |
+| **Parse/serialize property values**                | `src/mainview/lib/propertyValues.ts` | Document properties JSON ↔ `DocumentPropertyValues`.                                     |
 
 ---
 
 ## Sidebar and documents
 
-| Keyword | File | Notes |
-|--------|------|------|
-| **Document sidebar** (list + collections) | `src/mainview/components/documents/DocumentSidebar.tsx` | Main sidebar layout. |
-| **Document list**, tree | `src/mainview/components/documents/documentTree.ts` | Tree structure for sidebar (collections, nesting). |
-| **Document list UI** | `src/mainview/components/documents/DocumentList.tsx` | Renders list of documents. |
-| **Single document row** | `src/mainview/components/documents/DocumentListItem.tsx` | Item with icon, title, actions. |
-| **Collection section** | `src/mainview/components/documents/CollectionSection.tsx` | Collection header + documents. |
-| **Sidebar header** | `src/mainview/components/documents/SidebarHeader.tsx` | Top of sidebar (e.g. database name). |
-| **Document icon** (fixed icons + emoji) | `src/mainview/components/documents/DocumentIconView.tsx` | Renders icon/emoji. |
-| **Icon picker** | `src/mainview/components/documents/DocumentIconPicker.tsx` | Picker UI for document icon. |
-| **Emoji picker panel** | `src/mainview/components/documents/EmojiMartPickerPanel.tsx` | Emoji-mart integration. |
+| Keyword                                   | File                                                         | Notes                                              |
+| ----------------------------------------- | ------------------------------------------------------------ | -------------------------------------------------- |
+| **Document sidebar** (list + collections) | `src/mainview/components/documents/DocumentSidebar.tsx`      | Main sidebar layout.                               |
+| **Document list**, tree                   | `src/mainview/components/documents/documentTree.ts`          | Tree structure for sidebar (collections, nesting). |
+| **Document list UI**                      | `src/mainview/components/documents/DocumentList.tsx`         | Renders list of documents.                         |
+| **Single document row**                   | `src/mainview/components/documents/DocumentListItem.tsx`     | Item with icon, title, actions.                    |
+| **Collection section**                    | `src/mainview/components/documents/CollectionSection.tsx`    | Collection header + documents.                     |
+| **Sidebar header**                        | `src/mainview/components/documents/SidebarHeader.tsx`        | Top of sidebar (e.g. database name).               |
+| **Document icon** (fixed icons + emoji)   | `src/mainview/components/documents/DocumentIconView.tsx`     | Renders icon/emoji.                                |
+| **Icon picker**                           | `src/mainview/components/documents/DocumentIconPicker.tsx`   | Picker UI for document icon.                       |
+| **Emoji picker panel**                    | `src/mainview/components/documents/EmojiMartPickerPanel.tsx` | Emoji-mart integration.                            |
 
 ---
 
 ## Editor (BlockNote + properties)
 
-| Keyword | File | Notes |
-|--------|------|------|
+| Keyword                              | File                                                | Notes                                                                  |
+| ------------------------------------ | --------------------------------------------------- | ---------------------------------------------------------------------- |
 | **Document editor**, BlockNote, save | `src/mainview/components/editor/DocumentEditor.tsx` | useCreateBlockNote, BlockNoteView, debounced save, title + properties. |
-| **Title bar** (doc title input) | `src/mainview/components/editor/TitleBar.tsx` | Inline title editing. |
-| **Properties bar** (custom props) | `src/mainview/components/editor/PropertiesBar.tsx` | Renders property definitions and values (string, number, date, etc.). |
+| **Title bar** (doc title input)      | `src/mainview/components/editor/TitleBar.tsx`       | Inline title editing.                                                  |
+| **Properties bar** (custom props)    | `src/mainview/components/editor/PropertiesBar.tsx`  | Renders property definitions and values (string, number, date, etc.).  |
 
 ---
 
 ## Settings and theme
 
-| Keyword | File | Notes |
-|--------|------|------|
-| **Settings modal** (theme, database, reload) | `src/mainview/components/settings/SettingsModal.tsx` | Theme toggle, database location, metadata, reload. |
-| **Theme context** (light/dark) | `src/mainview/themeContext.tsx` | useTheme, ThemeProvider, persisted theme. |
-| **Base UI themes** (light/dark) | `src/mainview/theme.ts` | createLightTheme / createDarkTheme for Base UI. |
-| **CSS variables**, global styles | `src/mainview/index.css` | `:root` / `[data-theme="dark"]` / `[data-theme="light"]`, Tailwind. |
+| Keyword                                      | File                                                 | Notes                                                               |
+| -------------------------------------------- | ---------------------------------------------------- | ------------------------------------------------------------------- |
+| **Settings modal** (theme, database, reload) | `src/mainview/components/settings/SettingsModal.tsx` | Theme toggle, database location, metadata, reload.                  |
+| **Theme context** (light/dark)               | `src/mainview/themeContext.tsx`                      | useTheme, ThemeProvider, persisted theme.                           |
+| **Base UI themes** (light/dark)              | `src/mainview/theme.ts`                              | createLightTheme / createDarkTheme for Base UI.                     |
+| **CSS variables**, global styles             | `src/mainview/index.css`                             | `:root` / `[data-theme="dark"]` / `[data-theme="light"]`, Tailwind. |
 
 ---
 
 ## UI primitives
 
-| Keyword | File | Notes |
-|--------|------|------|
-| **Button** (Base UI) | `src/mainview/components/ui/Button.tsx` | Reusable button. |
-| **useClickOutside** | `src/mainview/hooks/useClickOutside.ts` | Hook for closing dropdowns/modals. |
+| Keyword              | File                                    | Notes                              |
+| -------------------- | --------------------------------------- | ---------------------------------- |
+| **Button** (Base UI) | `src/mainview/components/ui/Button.tsx` | Reusable button.                   |
+| **useClickOutside**  | `src/mainview/hooks/useClickOutside.ts` | Hook for closing dropdowns/modals. |
 
 ---
 
 ## Persistence (Bun / backend)
 
-| Keyword | File | Notes |
-|--------|------|------|
+| Keyword                                 | File               | Notes                                                                                    |
+| --------------------------------------- | ------------------ | ---------------------------------------------------------------------------------------- |
 | **SQLite**, schema, CRUD, settings file | `src/bun/index.ts` | `documents.db`, collections/documents/property_definitions, `settings.json` in userData. |
-| **Database path**, userData | `src/bun/index.ts` | `Utils.paths.userData`, `setDatabaseLocation`, `reloadDatabase`. |
+| **Database path**, userData             | `src/bun/index.ts` | `Utils.paths.userData`, `setDatabaseLocation`, `reloadDatabase`.                         |
+
+---
+
+## Validation
+
+After making changes, run the typecheck script to catch type errors and lint issues:
+
+```sh
+bun run typecheck
+```
+
+This runs `oxlint --type-aware && tsgo --noEmit && oxfmt --check .` — linting, type-checking, and format-checking in one command.
 
 ---
 
 ## ATProto Lexicons (BlockNote document format)
 
-| Keyword | File | Notes |
-|--------|------|------|
-| **Generic block/inline/style shapes** | `src/lexicons/org/blocknote/schema.json` | Block, StyledText, Link, TableContent, Styles — no specific implementations. |
-| **Default block types** | `src/lexicons/org/blocknote/defaultBlocks.json` | All 14 default blocks (paragraph, heading, etc.), text/link inline content, 7 style tokens. |
-| **Document record** | `src/lexicons/org/blocknote/document.json` | ATProto record: content (blocks), optional schema declaration for validation. |
-| **Generated TypeScript** | `src/generated/lexicons/` | Output from `lex-cli generate`. Types + validation schemas. |
-| **Serialization adapter** | `src/shared/atproto/serialize.ts` | `blocknoteToLexicon()` / `lexiconToBlocknote()` — converts between BlockNote and lexicon format. |
-| **lex-cli config** | `lex.config.js` | Points to `src/lexicons/**/*.json`, outputs to `src/generated/lexicons/`. |
+| Keyword                               | File                                            | Notes                                                                                            |
+| ------------------------------------- | ----------------------------------------------- | ------------------------------------------------------------------------------------------------ |
+| **Generic block/inline/style shapes** | `src/lexicons/org/blocknote/schema.json`        | Block, StyledText, Link, TableContent, Styles — no specific implementations.                     |
+| **Default block types**               | `src/lexicons/org/blocknote/defaultBlocks.json` | All 14 default blocks (paragraph, heading, etc.), text/link inline content, 7 style tokens.      |
+| **Document record**                   | `src/lexicons/org/blocknote/document.json`      | ATProto record: content (blocks), optional schema declaration for validation.                    |
+| **Generated TypeScript**              | `src/generated/lexicons/`                       | Output from `lex-cli generate`. Types + validation schemas.                                      |
+| **Serialization adapter**             | `src/shared/atproto/serialize.ts`               | `blocknoteToLexicon()` / `lexiconToBlocknote()` — converts between BlockNote and lexicon format. |
+| **lex-cli config**                    | `lex.config.js`                                 | Points to `src/lexicons/**/*.json`, outputs to `src/generated/lexicons/`.                        |
 
 ---
 

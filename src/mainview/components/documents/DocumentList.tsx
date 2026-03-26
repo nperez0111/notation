@@ -2,52 +2,52 @@ import type { Collection, Document } from "../../../shared/types";
 import { CollectionSection } from "./CollectionSection";
 
 type DocumentListProps = {
-	collections: Collection[];
-	documents: Document[];
-	selectedId: number | null;
-	onSelect: (id: number) => void;
-	onCreateDocument: (collectionId: number, parentId?: number | null) => void;
-	onCreateCollection?: () => void;
-	onRenameCollection?: (id: number, name: string) => void;
-	onIconChange?: (documentId: number, icon: Document["icon"]) => void;
-	onDeleteDocument?: (id: number) => void;
-	onReparentDocument?: (
-		documentId: number,
-		collectionId: number,
-		parentId: number | null,
-		insertAtIndex?: number,
-	) => void;
+  collections: Collection[];
+  documents: Document[];
+  selectedId: number | null;
+  onSelect: (id: number) => void;
+  onCreateDocument: (collectionId: number, parentId?: number | null) => void | Promise<void>;
+  onCreateCollection?: () => void | Promise<void>;
+  onRenameCollection?: (id: number, name: string) => void | Promise<void>;
+  onIconChange?: (documentId: number, icon: Document["icon"]) => void | Promise<void>;
+  onDeleteDocument?: (id: number) => void | Promise<void>;
+  onReparentDocument?: (
+    documentId: number,
+    collectionId: number,
+    parentId: number | null,
+    insertAtIndex?: number,
+  ) => void | Promise<void>;
 };
 
 export function DocumentList({
-	collections,
-	documents,
-	selectedId,
-	onSelect,
-	onCreateDocument,
-	onCreateCollection: _onCreateCollection,
-	onRenameCollection,
-	onIconChange,
-	onDeleteDocument,
-	onReparentDocument,
+  collections,
+  documents,
+  selectedId,
+  onSelect,
+  onCreateDocument,
+  onCreateCollection: _onCreateCollection,
+  onRenameCollection,
+  onIconChange,
+  onDeleteDocument,
+  onReparentDocument,
 }: DocumentListProps) {
-	return (
-		<ul className="flex-1 overflow-auto py-2 pr-1" role="list">
-			{collections.map((coll) => (
-				<li key={coll.id} className="px-1.5">
-					<CollectionSection
-						collection={coll}
-						documents={documents}
-						selectedId={selectedId}
-						onSelect={onSelect}
-						onCreateDocument={onCreateDocument}
-						onRenameCollection={onRenameCollection}
-						onIconChange={onIconChange}
-						onDeleteDocument={onDeleteDocument}
-						onReparentDocument={onReparentDocument}
-					/>
-				</li>
-			))}
-		</ul>
-	);
+  return (
+    <ul className="flex-1 overflow-auto py-2 pr-1" role="list">
+      {collections.map((coll) => (
+        <li key={coll.id} className="px-1.5">
+          <CollectionSection
+            collection={coll}
+            documents={documents}
+            selectedId={selectedId}
+            onSelect={onSelect}
+            onCreateDocument={onCreateDocument}
+            onRenameCollection={onRenameCollection}
+            onIconChange={onIconChange}
+            onDeleteDocument={onDeleteDocument}
+            onReparentDocument={onReparentDocument}
+          />
+        </li>
+      ))}
+    </ul>
+  );
 }

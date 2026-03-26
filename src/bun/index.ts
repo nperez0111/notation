@@ -5,13 +5,7 @@ import Electrobun, {
   Updater,
   Utils,
 } from "electrobun/bun";
-import type {
-  Collection,
-  Document,
-  DocumentRPC,
-  Property,
-  SettingsInfo,
-} from "../shared/types";
+import type { Collection, Document, DocumentRPC, Property, SettingsInfo } from "../shared/types";
 import Database from "bun:sqlite";
 
 type DatabaseInstance = InstanceType<typeof Database>;
@@ -53,13 +47,12 @@ function loadSettings(): SettingsJson {
 }
 
 function saveSettings(settings: SettingsJson): void {
-  Bun.write(getSettingsPath(), JSON.stringify(settings, null, 2));
+  void Bun.write(getSettingsPath(), JSON.stringify(settings, null, 2));
 }
 
 const docColumns =
   "id, title, created_at as createdAt, updated_at as updatedAt, created_by as createdBy, updated_by as updatedBy, content, properties, collection_id as collectionId, parent_id as parentId, icon, child_order as childOrder";
-const collColumns =
-  "id, name, created_at as createdAt, updated_at as updatedAt";
+const collColumns = "id, name, created_at as createdAt, updated_at as updatedAt";
 const propColumns = "id, collection_id as collectionId, label, type";
 
 type DbState = {
@@ -142,14 +135,12 @@ function createDbState(dbDirectory: string): DbState {
     // Column already exists (new schema)
   }
   try {
-    db.exec(
-      "ALTER TABLE documents ADD COLUMN child_order INTEGER NOT NULL DEFAULT 0",
-    );
+    db.exec("ALTER TABLE documents ADD COLUMN child_order INTEGER NOT NULL DEFAULT 0");
   } catch {
     // Column already exists
   }
 
-  if (!(db.query("SELECT id FROM collections LIMIT 1").get() as unknown)) {
+  if (!db.query("SELECT id FROM collections LIMIT 1").get()) {
     db.exec("INSERT INTO collections (name) VALUES ('Default')");
   }
 
@@ -157,12 +148,8 @@ function createDbState(dbDirectory: string): DbState {
     db,
     dbPath,
     dbDirectory,
-    getAllCollections: db.prepare(
-      `SELECT ${collColumns} FROM collections ORDER BY name`,
-    ),
-    getCollectionById: db.prepare(
-      `SELECT ${collColumns} FROM collections WHERE id = ?`,
-    ),
+    getAllCollections: db.prepare(`SELECT ${collColumns} FROM collections ORDER BY name`),
+    getCollectionById: db.prepare(`SELECT ${collColumns} FROM collections WHERE id = ?`),
     insertCollection: db.prepare(
       `INSERT INTO collections (name) VALUES (?) RETURNING ${collColumns}`,
     ),
@@ -173,9 +160,7 @@ function createDbState(dbDirectory: string): DbState {
     getAllDocuments: db.prepare(
       `SELECT ${docColumns} FROM documents ORDER BY collection_id, updated_at DESC`,
     ),
-    getDocumentById: db.prepare(
-      `SELECT ${docColumns} FROM documents WHERE id = ?`,
-    ),
+    getDocumentById: db.prepare(`SELECT ${docColumns} FROM documents WHERE id = ?`),
     insertDocument: db.prepare(
       `INSERT INTO documents (title, content, created_by, updated_by, properties, collection_id, parent_id, icon, child_order) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING ${docColumns}`,
     ),
@@ -189,28 +174,19 @@ function createDbState(dbDirectory: string): DbState {
     getPropertiesByCollection: db.prepare(
       `SELECT ${propColumns} FROM property_definitions WHERE collection_id = ? ORDER BY position ASC, id ASC`,
     ),
-    getPropertyById: db.prepare(
-      `SELECT ${propColumns} FROM property_definitions WHERE id = ?`,
-    ),
+    getPropertyById: db.prepare(`SELECT ${propColumns} FROM property_definitions WHERE id = ?`),
     insertProperty: db.prepare(
       `INSERT INTO property_definitions (collection_id, label, type) VALUES (?, ?, ?) RETURNING ${propColumns}`,
     ),
     updatePropertyStmt: db.prepare(
       `UPDATE property_definitions SET label = COALESCE(?, label), type = COALESCE(?, type) WHERE id = ? RETURNING ${propColumns}`,
     ),
-    deletePropertyStmt: db.prepare(
-      "DELETE FROM property_definitions WHERE id = ?",
-    ),
-    updatePropertyPosition: db.prepare(
-      "UPDATE property_definitions SET position = ? WHERE id = ?",
-    ),
+    deletePropertyStmt: db.prepare("DELETE FROM property_definitions WHERE id = ?"),
+    updatePropertyPosition: db.prepare("UPDATE property_definitions SET position = ? WHERE id = ?"),
   };
 }
 /** Returns set of all descendant document ids under the given document (by parent_id chain). */
-function getDescendantIds(
-  documents: Document[],
-  parentId: number,
-): Set<number> {
+function getDescendantIds(documents: Document[], parentId: number): Set<number> {
   const byParent = new Map<number | null, Document[]>();
   for (const d of documents) {
     const key = d.parentId;
@@ -251,14 +227,10 @@ const documentRPC = BrowserView.defineRPC<DocumentRPC>({
   handlers: {
     requests: {
       getCollections: () => dbState.getAllCollections.all() as Collection[],
-      getCollection: ({ id }) =>
-        (dbState.getCollectionById.get(id) as Collection) ?? null,
-      createCollection: ({ name }) =>
-        dbState.insertCollection.get(name) as Collection,
+      getCollection: ({ id }) => (dbState.getCollectionById.get(id) as Collection) ?? null,
+      createCollection: ({ name }) => dbState.insertCollection.get(name) as Collection,
       updateCollection: ({ id, name }) => {
-        const updated = dbState.updateCollectionStmt.get(name, id) as
-          | Collection
-          | undefined;
+        const updated = dbState.updateCollectionStmt.get(name, id) as Collection | undefined;
         return updated ?? null;
       },
       deleteCollection: ({ id }) => {
@@ -267,24 +239,17 @@ const documentRPC = BrowserView.defineRPC<DocumentRPC>({
           .get(id) as { id: number } | undefined;
         if (other) {
           dbState.db
-            .prepare(
-              "UPDATE documents SET collection_id = ? WHERE collection_id = ?",
-            )
+            .prepare("UPDATE documents SET collection_id = ? WHERE collection_id = ?")
             .run(other.id, id);
         } else {
-          dbState.db
-            .prepare("DELETE FROM documents WHERE collection_id = ?")
-            .run(id);
+          dbState.db.prepare("DELETE FROM documents WHERE collection_id = ?").run(id);
         }
-        dbState.db
-          .prepare("DELETE FROM property_definitions WHERE collection_id = ?")
-          .run(id);
+        dbState.db.prepare("DELETE FROM property_definitions WHERE collection_id = ?").run(id);
         dbState.deleteCollectionStmt.run(id);
         return { success: true };
       },
       getDocuments: () => dbState.getAllDocuments.all() as Document[],
-      getDocument: ({ id }) =>
-        (dbState.getDocumentById.get(id) as Document) ?? null,
+      getDocument: ({ id }) => (dbState.getDocumentById.get(id) as Document) ?? null,
       createDocument: ({
         title,
         content,
@@ -325,22 +290,18 @@ const documentRPC = BrowserView.defineRPC<DocumentRPC>({
         const newProps = properties ?? row.properties;
         const newCollectionId = collectionId ?? row.collectionId;
         const newParentId = parentId !== undefined ? parentId : row.parentId;
-        const newIcon =
-          icon !== undefined ? icon : (row as { icon?: string | null }).icon;
+        const newIcon = icon !== undefined ? icon : (row as { icon?: string | null }).icon;
 
         // Enforce: cannot move a document into itself or into one of its descendants (no-op)
         if (parentId !== undefined && newParentId !== null) {
           if (newParentId === id) return row;
           const allDocs = dbState.getAllDocuments.all() as Document[];
-          const inCollection = allDocs.filter(
-            (d) => d.collectionId === newCollectionId,
-          );
+          const inCollection = allDocs.filter((d) => d.collectionId === newCollectionId);
           const descendantsOfSource = getDescendantIds(inCollection, id);
           if (descendantsOfSource.has(newParentId)) return row;
         }
 
-        const currentChildOrder =
-          (row as { childOrder?: number }).childOrder ?? 0;
+        const currentChildOrder = (row as { childOrder?: number }).childOrder ?? 0;
         const updated = dbState.updateDocumentStmt.get(
           newTitle,
           newContent,
@@ -367,9 +328,7 @@ const documentRPC = BrowserView.defineRPC<DocumentRPC>({
           for (const child of children) stack.push(child.id);
         }
         const placeholders = toDelete.map(() => "?").join(",");
-        dbState.db
-          .prepare(`DELETE FROM documents WHERE id IN (${placeholders})`)
-          .run(...toDelete);
+        dbState.db.prepare(`DELETE FROM documents WHERE id IN (${placeholders})`).run(...toDelete);
         return { success: true };
       },
       getPropertyDefinitions: ({ collectionId }) =>
@@ -379,11 +338,9 @@ const documentRPC = BrowserView.defineRPC<DocumentRPC>({
       updatePropertyDefinition: ({ id, label, type }) => {
         const row = dbState.getPropertyById.get(id) as Property | undefined;
         if (!row) return null;
-        const updated = dbState.updatePropertyStmt.get(
-          label ?? row.label,
-          type ?? row.type,
-          id,
-        ) as Property | undefined;
+        const updated = dbState.updatePropertyStmt.get(label ?? row.label, type ?? row.type, id) as
+          | Property
+          | undefined;
         return updated ?? null;
       },
       deletePropertyDefinition: ({ id }) => {
@@ -409,9 +366,7 @@ const documentRPC = BrowserView.defineRPC<DocumentRPC>({
         ).c;
         const s = loadSettings();
         const dbName = s.databaseName ?? basename(dbState.dbDirectory);
-        const recentRaw = (s.recentDbDirectories ?? []).filter(
-          (d) => d !== dbState.dbDirectory,
-        );
+        const recentRaw = (s.recentDbDirectories ?? []).filter((d) => d !== dbState.dbDirectory);
         const recent = [dbState.dbDirectory, ...recentRaw].slice(0, 10);
         return {
           dbPath: dbState.dbPath,
@@ -421,10 +376,7 @@ const documentRPC = BrowserView.defineRPC<DocumentRPC>({
           databaseIcon: s.databaseIcon ?? null,
           recentDatabases: recent.map((dir) => ({
             directory: dir,
-            name:
-              dir === dbState.dbDirectory && s.databaseName
-                ? s.databaseName
-                : basename(dir),
+            name: dir === dbState.dbDirectory && s.databaseName ? s.databaseName : basename(dir),
           })),
           sidebarWidth: s.sidebarWidth,
         };
@@ -440,13 +392,7 @@ const documentRPC = BrowserView.defineRPC<DocumentRPC>({
           return null;
         }
       },
-      setDatabaseLocation: ({
-        directory,
-        mode,
-      }: {
-        directory: string;
-        mode: "new" | "move";
-      }) => {
+      setDatabaseLocation: ({ directory, mode }: { directory: string; mode: "new" | "move" }) => {
         if (!existsSync(directory)) {
           mkdirSync(directory, { recursive: true });
         }
@@ -466,13 +412,7 @@ const documentRPC = BrowserView.defineRPC<DocumentRPC>({
         });
         return { success: true };
       },
-      setDatabaseMetadata: ({
-        name,
-        icon,
-      }: {
-        name?: string;
-        icon?: string | null;
-      }) => {
+      setDatabaseMetadata: ({ name, icon }: { name?: string; icon?: string | null }) => {
         const s = loadSettings();
         saveSettings({
           ...s,
@@ -503,9 +443,7 @@ async function getMainViewUrl(): Promise<string> {
       console.log(`HMR enabled: Using Vite dev server at ${DEV_SERVER_URL}`);
       return DEV_SERVER_URL;
     } catch {
-      console.log(
-        "Vite dev server not running. Run 'bun run dev:hmr' for HMR support.",
-      );
+      console.log("Vite dev server not running. Run 'bun run dev:hmr' for HMR support.");
     }
   }
   return "views://mainview/index.html";
@@ -516,9 +454,7 @@ const isMac = process.platform === "darwin";
 
 // Application menu: set after window + deferred so native bridge receives the config (fixes macOS "Unable to parse empty data").
 // macOS: first item is { submenu } only (app menu); Windows: File first with Settings.
-function buildApplicationMenu(): Parameters<
-  typeof ApplicationMenu.setApplicationMenu
->[0] {
+function buildApplicationMenu(): Parameters<typeof ApplicationMenu.setApplicationMenu>[0] {
   const appSubmenu = [
     { label: "Settings…", action: "open-settings", accelerator: "," },
     { type: "separator" as const },
@@ -529,9 +465,7 @@ function buildApplicationMenu(): Parameters<
     { label: "Quit", role: "quit", accelerator: "q" },
   ];
   const fileSubmenu = [
-    ...(isMac
-      ? []
-      : [{ label: "Settings…", action: "open-settings", accelerator: "," }]),
+    ...(isMac ? [] : [{ label: "Settings…", action: "open-settings", accelerator: "," }]),
     { type: "separator" as const },
     { role: "close" },
   ];
@@ -558,10 +492,7 @@ function buildApplicationMenu(): Parameters<
 
   const topLevel: Parameters<typeof ApplicationMenu.setApplicationMenu>[0] = [];
   if (isMac) {
-    topLevel.push(
-      { submenu: appSubmenu },
-      { label: "File", submenu: fileSubmenu },
-    );
+    topLevel.push({ submenu: appSubmenu }, { label: "File", submenu: fileSubmenu });
   } else {
     topLevel.push({ label: "File", submenu: fileSubmenu });
   }
@@ -576,7 +507,7 @@ function buildApplicationMenu(): Parameters<
 Electrobun.events.on("application-menu-clicked", (e) => {
   const action = (e?.data as { action?: string } | undefined)?.action;
   if (action === "open-settings") {
-    mainWindow.webview?.rpc?.request?.("openSettings", {});
+    void mainWindow.webview?.rpc?.request?.("openSettings", {});
   }
 });
 
