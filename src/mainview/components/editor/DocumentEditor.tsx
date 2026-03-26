@@ -5,7 +5,6 @@ import "@blocknote/core/fonts/inter.css";
 import "@blocknote/mantine/style.css";
 import {
   BlockNoteSchema,
-  defaultBlockSpecs,
   createCodeBlockSpec,
   type Block,
   type PartialBlock,
