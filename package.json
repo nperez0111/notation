@@ -8,7 +8,8 @@
     "dev:electrobun": "electrobun dev --watch",
     "dev:hmr": "vite --port 5173",
     "typecheck": "tsc --noEmit",
-    "build:canary": "vite build && electrobun build --env=canary"
+    "build:canary": "vite build && electrobun build --env=canary",
+    "generate:lexicons": "lex-cli generate"
   },
   "dependencies": {
     "@atlaskit/pragmatic-drag-and-drop": "1.7.7",
@@ -30,6 +31,7 @@
     "styletron-react": "6.1.1"
   },
   "devDependencies": {
+    "@atcute/lex-cli": "2.5.3",
     "@types/bun": "latest",
     "@types/react": "^18.3.12",
     "@types/react-dom": "^18.3.1",

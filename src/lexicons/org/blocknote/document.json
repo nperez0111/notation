@@ -1,0 +1,93 @@
+{
+  "lexicon": 1,
+  "id": "org.blocknote.document",
+  "description": "A BlockNote document, usable both as a standalone ATProto record and as embeddable content within other records (e.g., site.standard.document#content).",
+  "defs": {
+    "main": {
+      "type": "record",
+      "key": "tid",
+      "description": "A standalone BlockNote document record. For embedding BlockNote content inside another record's open union (e.g., site.standard.document), use #content instead.",
+      "record": {
+        "type": "object",
+        "required": ["content", "createdAt"],
+        "properties": {
+          "content": {
+            "type": "ref",
+            "ref": "#content",
+            "description": "The document content (blocks and optional schema declaration)."
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "datetime"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "datetime"
+          }
+        }
+      }
+    },
+    "content": {
+      "type": "object",
+      "description": "BlockNote document content. Use this as the $type value ('org.blocknote.document#content') when embedding in an open union like site.standard.document's content field.",
+      "required": ["blocks"],
+      "properties": {
+        "blocks": {
+          "type": "array",
+          "description": "The document body as an ordered array of blocks.",
+          "items": {
+            "type": "ref",
+            "ref": "org.blocknote.schema#block"
+          }
+        },
+        "schema": {
+          "type": "ref",
+          "ref": "#schemaDeclaration",
+          "description": "Optional declaration of which block, inline content, and style types are valid in this document. When present, validators can check that all content conforms to the declared types. When absent, the document is open-format."
+        }
+      }
+    },
+    "schemaDeclaration": {
+      "type": "object",
+      "description": "Declares which block, inline content, and style types are valid in a document. Each entry contains an identifier (e.g., lexicon ref like 'org.blocknote.defaultBlocks#paragraph') that the application recognizes. Validators use this to reject unknown block types.",
+      "properties": {
+        "blocks": {
+          "type": "array",
+          "description": "Valid block type declarations.",
+          "items": {
+            "type": "ref",
+            "ref": "#schemaEntry"
+          }
+        },
+        "inlineContent": {
+          "type": "array",
+          "description": "Valid inline content type declarations.",
+          "items": {
+            "type": "ref",
+            "ref": "#schemaEntry"
+          }
+        },
+        "styles": {
+          "type": "array",
+          "description": "Valid style type declarations.",
+          "items": {
+            "type": "ref",
+            "ref": "#schemaEntry"
+          }
+        }
+      }
+    },
+    "schemaEntry": {
+      "type": "object",
+      "description": "A single entry in a schema declaration, identifying a valid type by its identifier.",
+      "required": ["id"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "maxLength": 256,
+          "description": "The type identifier (e.g., 'org.blocknote.defaultBlocks#paragraph')."
+        }
+      }
+    }
+  }
+}

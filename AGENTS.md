@@ -138,6 +138,19 @@ Use this file as a table of contents: **keywords → files**. Read the listed fi
 
 ---
 
+## ATProto Lexicons (BlockNote document format)
+
+| Keyword | File | Notes |
+|--------|------|------|
+| **Generic block/inline/style shapes** | `src/lexicons/org/blocknote/schema.json` | Block, StyledText, Link, TableContent, Styles — no specific implementations. |
+| **Default block types** | `src/lexicons/org/blocknote/defaultBlocks.json` | All 14 default blocks (paragraph, heading, etc.), text/link inline content, 7 style tokens. |
+| **Document record** | `src/lexicons/org/blocknote/document.json` | ATProto record: content (blocks), optional schema declaration for validation. |
+| **Generated TypeScript** | `src/generated/lexicons/` | Output from `lex-cli generate`. Types + validation schemas. |
+| **Serialization adapter** | `src/shared/atproto/serialize.ts` | `blocknoteToLexicon()` / `lexiconToBlocknote()` — converts between BlockNote and lexicon format. |
+| **lex-cli config** | `lex.config.js` | Points to `src/lexicons/**/*.json`, outputs to `src/generated/lexicons/`. |
+
+---
+
 ## Quick lookup by topic
 
 - **Add a new RPC method** → Define in `src/shared/types.ts` (`DocumentRPC`), implement in `src/bun/index.ts`, call via `useRpc()` in `src/mainview/electroview.tsx`.
@@ -145,3 +158,5 @@ Use this file as a table of contents: **keywords → files**. Read the listed fi
 - **Change editor behavior or blocks** → `src/mainview/components/editor/DocumentEditor.tsx` and BlockNote APIs.
 - **Change global colors or theme** → `src/mainview/index.css` (CSS vars), `src/mainview/theme.ts` (Base UI), `src/mainview/themeContext.tsx` (theme state).
 - **Change sidebar structure or drag-drop** → `src/mainview/components/documents/` (DocumentSidebar, documentTree, DocumentList, etc.).
+- **Add/modify lexicons** → Edit JSON in `src/lexicons/org/blocknote/`, run `bun run generate:lexicons`.
+- **BlockNote ↔ ATProto serialization** → `src/shared/atproto/serialize.ts`.
