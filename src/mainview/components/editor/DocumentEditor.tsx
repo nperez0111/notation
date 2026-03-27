@@ -15,11 +15,13 @@ import type {
   DocumentIcon,
   DocumentPropertyValues,
   Property,
+  PublishStatus,
 } from "../../../shared/types";
 import { serializeDocumentProperties } from "../../lib/propertyValues";
 import { TitleBar } from "./TitleBar";
 import { PropertiesBar } from "./PropertiesBar";
 import { ChildDocumentsSection } from "./ChildDocumentsSection";
+import { PublishButton } from "./PublishButton";
 
 const SAVE_DELAY_MS = 500;
 
@@ -53,6 +55,10 @@ type DocumentEditorProps = {
   /** Child documents of the current doc (in display order). Shown after properties. */
   childDocuments?: Document[];
   onReorderChildDocuments?: (orderedIds: number[]) => void | Promise<void>;
+  publishStatus?: PublishStatus | null;
+  blueskyConnected?: boolean;
+  onPublish?: () => Promise<void>;
+  onUnpublish?: () => Promise<void>;
 };
 
 export function DocumentEditor({
@@ -74,6 +80,10 @@ export function DocumentEditor({
   onReorderProperties,
   childDocuments = [],
   onReorderChildDocuments,
+  publishStatus,
+  blueskyConnected = false,
+  onPublish,
+  onUnpublish,
 }: DocumentEditorProps) {
   const [title, setTitle] = useState(initialTitle);
   const [propertyValues, setPropertyValues] =
@@ -123,36 +133,42 @@ export function DocumentEditor({
 
   return (
     <>
-      {(contextCollectionName || (contextHierarchy && contextHierarchy.length > 0)) && (
-        <div className="flex items-center justify-between bg-[var(--color-surface)]/70 px-6 py-2 text-xs text-[var(--color-text-muted)]">
-          <div className="flex flex-wrap items-center gap-1.5">
-            {contextCollectionName && (
-              <span className="font-medium text-[var(--color-text)]">{contextCollectionName}</span>
-            )}
-            {contextHierarchy && contextHierarchy.length > 0 && (
-              <>
-                <span className="text-[var(--color-text-subtle)]">/</span>
-                {contextHierarchy.map((item, index) => {
-                  const isLastParent = index === contextHierarchy.length - 1;
-                  const label = item.title?.trim() || "Untitled";
-                  return (
-                    <span key={item.id} className="flex items-center gap-1">
-                      <button
-                        type="button"
-                        onClick={() => onNavigateToDocument?.(item.id)}
-                        className="max-w-[160px] truncate text-[var(--color-text-muted)] hover:text-[var(--color-text)] hover:underline"
-                      >
-                        {label}
-                      </button>
-                      {!isLastParent && <span className="text-[var(--color-text-subtle)]">/</span>}
-                    </span>
-                  );
-                })}
-              </>
-            )}
-          </div>
+      <div className="flex items-center justify-between bg-[var(--color-surface)]/70 px-6 py-2 text-xs text-[var(--color-text-muted)]">
+        <div className="flex flex-wrap items-center gap-1.5">
+          {contextCollectionName && (
+            <span className="font-medium text-[var(--color-text)]">{contextCollectionName}</span>
+          )}
+          {contextHierarchy && contextHierarchy.length > 0 && (
+            <>
+              <span className="text-[var(--color-text-subtle)]">/</span>
+              {contextHierarchy.map((item, index) => {
+                const isLastParent = index === contextHierarchy.length - 1;
+                const label = item.title?.trim() || "Untitled";
+                return (
+                  <span key={item.id} className="flex items-center gap-1">
+                    <button
+                      type="button"
+                      onClick={() => onNavigateToDocument?.(item.id)}
+                      className="max-w-[160px] truncate text-[var(--color-text-muted)] hover:text-[var(--color-text)] hover:underline"
+                    >
+                      {label}
+                    </button>
+                    {!isLastParent && <span className="text-[var(--color-text-subtle)]">/</span>}
+                  </span>
+                );
+              })}
+            </>
+          )}
         </div>
-      )}
+        {onPublish && onUnpublish && (
+          <PublishButton
+            publishStatus={publishStatus ?? null}
+            blueskyConnected={blueskyConnected}
+            onPublish={onPublish}
+            onUnpublish={onUnpublish}
+          />
+        )}
+      </div>
       <TitleBar
         value={title}
         onChange={setTitle}

@@ -1,7 +1,14 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRpc } from "./electroview";
 import { useTheme } from "./themeContext";
-import type { Collection, Document, Property, SettingsInfo } from "../shared/types";
+import type {
+  BlueskySession,
+  Collection,
+  Document,
+  Property,
+  PublishStatus,
+  SettingsInfo,
+} from "../shared/types";
 import { DocumentSidebar } from "./components/documents/DocumentSidebar";
 import {
   buildDocumentTree,
@@ -27,26 +34,32 @@ export default function App() {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [settings, setSettings] = useState<SettingsInfo | null>(null);
   const [sidebarWidth, setSidebarWidth] = useState(256);
+  const [blueskySession, setBlueskySession] = useState<BlueskySession | null>(null);
+  const [publishStatus, setPublishStatus] = useState<PublishStatus | null>(null);
 
   const refetchFromDatabase = useCallback(() => {
     setLoading(true);
     setSelectedId(null);
     setCurrentDoc(null);
     setPropertyDefinitions([]);
-    void Promise.all([rpc.getCollections({}), rpc.getDocuments({}), rpc.getSettings({})]).then(
-      ([colls, list, s]) => {
-        setCollections(colls);
-        setDocuments(list);
-        setSettings(s);
-        if (s.sidebarWidth != null) setSidebarWidth(s.sidebarWidth);
-        setLoading(false);
-        if (list.length > 0) {
-          const firstId = list[0].id;
-          setSelectedId(firstId);
-          void rpc.getDocument({ id: firstId }).then((doc) => setCurrentDoc(doc ?? null));
-        }
-      },
-    );
+    void Promise.all([
+      rpc.getCollections({}),
+      rpc.getDocuments({}),
+      rpc.getSettings({}),
+      rpc.blueskyGetSession({}),
+    ]).then(([colls, list, s, bskySession]) => {
+      setCollections(colls);
+      setDocuments(list);
+      setSettings(s);
+      if (s.sidebarWidth != null) setSidebarWidth(s.sidebarWidth);
+      setBlueskySession(bskySession);
+      setLoading(false);
+      if (list.length > 0) {
+        const firstId = list[0].id;
+        setSelectedId(firstId);
+        void rpc.getDocument({ id: firstId }).then((doc) => setCurrentDoc(doc ?? null));
+      }
+    });
   }, [rpc]);
 
   const onSwitchDatabase = useCallback(
@@ -91,6 +104,15 @@ export default function App() {
       .getPropertyDefinitions({ collectionId: currentCollectionId })
       .then(setPropertyDefinitions);
   }, [currentDocId, currentCollectionId, rpc]);
+
+  // Load publish status for the current document.
+  useEffect(() => {
+    if (!currentDocId) {
+      setPublishStatus(null);
+      return;
+    }
+    void rpc.getPublishStatus({ id: currentDocId }).then(setPublishStatus);
+  }, [currentDocId, rpc]);
 
   // When user selects a document, load it (no useEffect: run in the callback).
   const onSelectDocument = useCallback(
@@ -170,6 +192,10 @@ export default function App() {
       };
       setCurrentDoc(next);
       setDocuments((prev) => prev.map((d) => (d.id === currentDoc.id ? next : d)));
+      // Refresh publish status after save (content hash may have changed)
+      if (next.publishedUri) {
+        void rpc.getPublishStatus({ id: currentDoc.id }).then(setPublishStatus);
+      }
     },
     [currentDoc, rpc],
   );
@@ -283,6 +309,45 @@ export default function App() {
     [rpc],
   );
 
+  const onPublishDocumentById = useCallback(
+    async (id: number) => {
+      await rpc.publishDocument({ id });
+      const updated = await rpc.getDocument({ id });
+      if (updated) {
+        setCurrentDoc((prev) => (prev?.id === id ? updated : prev));
+        setDocuments((prev) => prev.map((d) => (d.id === id ? updated : d)));
+      }
+      const status = await rpc.getPublishStatus({ id });
+      setPublishStatus((prev) => (id === selectedId ? status : prev));
+    },
+    [rpc, selectedId],
+  );
+
+  const onUnpublishDocumentById = useCallback(
+    async (id: number) => {
+      await rpc.unpublishDocument({ id });
+      const updated = await rpc.getDocument({ id });
+      if (updated) {
+        setCurrentDoc((prev) => (prev?.id === id ? updated : prev));
+        setDocuments((prev) => prev.map((d) => (d.id === id ? updated : d)));
+      }
+      if (id === selectedId) {
+        setPublishStatus({ published: false });
+      }
+    },
+    [rpc, selectedId],
+  );
+
+  const onPublishDocument = useCallback(async () => {
+    if (!currentDoc) return;
+    await onPublishDocumentById(currentDoc.id);
+  }, [currentDoc, onPublishDocumentById]);
+
+  const onUnpublishDocument = useCallback(async () => {
+    if (!currentDoc) return;
+    await onUnpublishDocumentById(currentDoc.id);
+  }, [currentDoc, onUnpublishDocumentById]);
+
   const onSidebarWidthChange = useCallback((width: number) => {
     setSidebarWidth(width);
   }, []);
@@ -361,6 +426,9 @@ export default function App() {
         sidebarWidth={sidebarWidth}
         onSidebarWidthChange={onSidebarWidthChange}
         onSidebarWidthChangeEnd={onSidebarWidthChangeEnd}
+        blueskyConnected={blueskySession != null}
+        onPublishDocument={onPublishDocumentById}
+        onUnpublishDocument={onUnpublishDocumentById}
       />
       <SettingsModal
         isOpen={settingsOpen}
@@ -368,6 +436,8 @@ export default function App() {
         theme={theme}
         onThemeChange={setTheme}
         onDatabaseReload={refetchFromDatabase}
+        blueskySession={blueskySession}
+        onBlueskySessionChange={setBlueskySession}
       />
       <main className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-[var(--color-surface)]">
         {loading ? (
@@ -414,6 +484,10 @@ export default function App() {
               onReorderProperties={onReorderProperties}
               childDocuments={childDocuments}
               onReorderChildDocuments={onReorderChildDocuments}
+              publishStatus={publishStatus}
+              blueskyConnected={blueskySession != null}
+              onPublish={onPublishDocument}
+              onUnpublish={onUnpublishDocument}
             />
           </div>
         ) : (

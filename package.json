@@ -15,6 +15,11 @@
     "generate:lexicons": "lex-cli generate"
   },
   "dependencies": {
+    "@atcute/atproto": "3.1.10",
+    "@atcute/bluesky": "3.3.0",
+    "@atcute/client": "4.2.1",
+    "@atcute/password-session": "0.1.0",
+    "@atcute/standard-site": "1.0.1",
     "@atlaskit/pragmatic-drag-and-drop": "1.7.7",
     "@blocknote/code-block": "0.47.0",
     "@blocknote/core": "0.47.0",
