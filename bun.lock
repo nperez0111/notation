@@ -5,6 +5,11 @@
     "": {
       "name": "electrobun-react-tailwind-vite",
       "dependencies": {
+        "@atcute/atproto": "3.1.10",
+        "@atcute/bluesky": "3.3.0",
+        "@atcute/client": "4.2.1",
+        "@atcute/password-session": "0.1.0",
+        "@atcute/standard-site": "1.0.1",
         "@atlaskit/pragmatic-drag-and-drop": "1.7.7",
         "@blocknote/code-block": "0.47.0",
         "@blocknote/core": "0.47.0",
@@ -44,11 +49,17 @@
   "packages": {
     "@alloc/quick-lru": ["@alloc/quick-lru@5.2.0", "", {}, "sha512-UrcABB+4bUrFABwbluTIBErXwvbsU/V7TZWfmbgJfbkwiBuziS9gxdODUyuiecfdGQ85jglMW6juS3+z5TsKLw=="],
 
+    "@atcute/atproto": ["@atcute/atproto@3.1.10", "", { "dependencies": { "@atcute/lexicons": "^1.2.6" } }, "sha512-+GKZpOc0PJcdWMQEkTfg/rSNDAAHxmAUGBl60g2az15etqJn5WaUPNGFE2sB7hKpwi5Ue2h/L0OacINcE/JDDQ=="],
+
+    "@atcute/bluesky": ["@atcute/bluesky@3.3.0", "", { "dependencies": { "@atcute/atproto": "^3.1.10", "@atcute/lexicons": "^1.2.9" } }, "sha512-TrLnlxuD6F/D2ZYzJ3aCiRD0yiFuhmVsd6oULNzzr8V9Xzlufg0yxkRiGmbMiF2iI508y/MFi6vzo625301c5A=="],
+
     "@atcute/car": ["@atcute/car@5.1.1", "", { "dependencies": { "@atcute/cbor": "^2.3.2", "@atcute/cid": "^2.4.1", "@atcute/uint8array": "^1.1.1", "@atcute/varint": "^2.0.0" } }, "sha512-MeRUJNXYgAHrJZw7mMoZJb9xIqv3LZLQw90rRRAVAo8SGNdICwyqe6Bf2LGesX73QM04MBuYO6Kqhvold3TFfg=="],
 
     "@atcute/cbor": ["@atcute/cbor@2.3.2", "", { "dependencies": { "@atcute/cid": "^2.4.1", "@atcute/multibase": "^1.1.8", "@atcute/uint8array": "^1.1.1" } }, "sha512-xP2SORSau/VVI00x2V4BjwIkHr6EQ7l/MXEOPaa4LGYtePFc4gnD4L1yN10dT5NEuUnvGEuCh6arLB7gz1smVQ=="],
 
     "@atcute/cid": ["@atcute/cid@2.4.1", "", { "dependencies": { "@atcute/multibase": "^1.1.8", "@atcute/uint8array": "^1.1.1" } }, "sha512-bwhna69RCv7yetXudtj+2qrMPYvhhIQqvJz6YUpUS98v7OdF3X2dnye9Nig2NDrklZcuyOsu7sQo7GOykJXRLQ=="],
+
+    "@atcute/client": ["@atcute/client@4.2.1", "", { "dependencies": { "@atcute/identity": "^1.1.3", "@atcute/lexicons": "^1.2.6" } }, "sha512-ZBFM2pW075JtgGFu5g7HHZBecrClhlcNH8GVP9Zz1aViWR+cjjBsTpeE63rJs+FCOHFYlirUyo5L8SGZ4kMINw=="],
 
     "@atcute/crypto": ["@atcute/crypto@2.4.1", "", { "dependencies": { "@atcute/multibase": "^1.2.0", "@atcute/uint8array": "^1.1.1", "@noble/secp256k1": "^3.0.0" } }, "sha512-tJ3Pi/XYcAsABKtqSlSOTKfO5YiQ4XdqlTuPS8HiRZSezOPcXBFFzAFWpSIJPURbVPFQL3LLrrK0Ea24wl5qeQ=="],
 
@@ -68,7 +79,11 @@
 
     "@atcute/multibase": ["@atcute/multibase@1.2.0", "", { "dependencies": { "@atcute/uint8array": "^1.1.1" } }, "sha512-ZK2GRra+qIYq9nNuQB52m2ul0hOmCQEtPobGfTSUxm7pF0OGEkWGkWHugFhNEDVzHzTwPxHp6VGotdZFue4lYQ=="],
 
+    "@atcute/password-session": ["@atcute/password-session@0.1.0", "", { "dependencies": { "@atcute/client": "^4.2.1", "@atcute/identity": "^1.1.3", "@atcute/lexicons": "^1.2.9" } }, "sha512-r4iUNT7aQ1J6XXGO+pu39037hFQd0GYEhOuw/aykoNI3HHFLX2t5YyrxWTu5uKMGECk3s7zEgc8B8ol9JsMjRA=="],
+
     "@atcute/repo": ["@atcute/repo@0.1.3", "", { "dependencies": { "@atcute/car": "^5.1.1", "@atcute/cbor": "^2.3.2", "@atcute/cid": "^2.4.1", "@atcute/crypto": "^2.4.0", "@atcute/lexicons": "^1.2.9", "@atcute/mst": "^1.0.0", "@atcute/uint8array": "^1.1.1" } }, "sha512-kN4gkrkQgJwI5xkVQ9zSdI8ULR47uH48EdJdjMvKAWsSDu8zKYd8ZQ6n778qa6o3WYEq02v9QVf7pzeU+3fYVA=="],
+
+    "@atcute/standard-site": ["@atcute/standard-site@1.0.1", "", { "dependencies": { "@atcute/atproto": "^3.1.10", "@atcute/lexicons": "^1.2.7" } }, "sha512-wL4ZAvbe3p7NxC92rRgc6vbd+0feNDEAfEcBLA+68KDTUtmtEko5lr09R31P7AWlN4MVTMRj5iLb9UaTThIzWw=="],
 
     "@atcute/uint8array": ["@atcute/uint8array@1.1.1", "", {}, "sha512-3LsC8XB8TKe9q/5hOA5sFuzGaIFdJZJNewC5OKa3o/eU6+K7JR6see9Zy2JbQERNVnRl11EzbNov1efgLMAs4g=="],
 

@@ -5,7 +5,28 @@ import Electrobun, {
   Updater,
   Utils,
 } from "electrobun/bun";
-import type { Collection, Document, DocumentRPC, Property, SettingsInfo } from "../shared/types";
+import type {
+  BlueskySession,
+  Collection,
+  Document,
+  DocumentRPC,
+  Property,
+  PublishStatus,
+  SettingsInfo,
+} from "../shared/types";
+import {
+  type BlueskyAuthRow,
+  blocksToPlaintext,
+  clearSession,
+  computeContentHash,
+  login as blueskyLogin,
+  publishDocument as blueskyPublishDocument,
+  unpublishDocument as blueskyUnpublishDocument,
+  ensurePublication,
+  resumeSession,
+} from "./bluesky";
+import { createLexiconContent } from "../shared/atproto/serialize";
+import type { PartialBlock } from "@blocknote/core";
 import Database from "bun:sqlite";
 
 type DatabaseInstance = InstanceType<typeof Database>;
@@ -51,7 +72,7 @@ function saveSettings(settings: SettingsJson): void {
 }
 
 const docColumns =
-  "id, title, created_at as createdAt, updated_at as updatedAt, created_by as createdBy, updated_by as updatedBy, content, properties, collection_id as collectionId, parent_id as parentId, icon, child_order as childOrder";
+  "id, title, created_at as createdAt, updated_at as updatedAt, created_by as createdBy, updated_by as updatedBy, content, properties, collection_id as collectionId, parent_id as parentId, icon, child_order as childOrder, published_uri as publishedUri, published_cid as publishedCid, published_at as publishedAt, content_hash as contentHash";
 const collColumns = "id, name, created_at as createdAt, updated_at as updatedAt";
 const propColumns = "id, collection_id as collectionId, label, type";
 
@@ -76,6 +97,11 @@ type DbState = {
   updatePropertyStmt: PreparedStatement;
   deletePropertyStmt: PreparedStatement;
   updatePropertyPosition: PreparedStatement;
+  getBlueskyAuth: PreparedStatement;
+  upsertBlueskyAuth: PreparedStatement;
+  deleteBlueskyAuth: PreparedStatement;
+  updateDocPublish: PreparedStatement;
+  clearDocPublish: PreparedStatement;
 };
 
 const INIT_SCHEMA = `
@@ -105,6 +131,16 @@ const INIT_SCHEMA = `
     parent_id INTEGER REFERENCES documents(id),
     icon TEXT,
     child_order INTEGER NOT NULL DEFAULT 0
+  );
+  CREATE TABLE IF NOT EXISTS bluesky_auth (
+    id INTEGER PRIMARY KEY CHECK (id = 1),
+    handle TEXT NOT NULL,
+    did TEXT NOT NULL,
+    service TEXT NOT NULL,
+    access_jwt TEXT NOT NULL,
+    refresh_jwt TEXT NOT NULL,
+    publication_uri TEXT,
+    updated_at TEXT NOT NULL DEFAULT (datetime('now'))
   );
 `;
 
@@ -136,6 +172,26 @@ function createDbState(dbDirectory: string): DbState {
   }
   try {
     db.exec("ALTER TABLE documents ADD COLUMN child_order INTEGER NOT NULL DEFAULT 0");
+  } catch {
+    // Column already exists
+  }
+  try {
+    db.exec("ALTER TABLE documents ADD COLUMN published_uri TEXT");
+  } catch {
+    // Column already exists
+  }
+  try {
+    db.exec("ALTER TABLE documents ADD COLUMN published_cid TEXT");
+  } catch {
+    // Column already exists
+  }
+  try {
+    db.exec("ALTER TABLE documents ADD COLUMN published_at TEXT");
+  } catch {
+    // Column already exists
+  }
+  try {
+    db.exec("ALTER TABLE documents ADD COLUMN content_hash TEXT");
   } catch {
     // Column already exists
   }
@@ -183,6 +239,19 @@ function createDbState(dbDirectory: string): DbState {
     ),
     deletePropertyStmt: db.prepare("DELETE FROM property_definitions WHERE id = ?"),
     updatePropertyPosition: db.prepare("UPDATE property_definitions SET position = ? WHERE id = ?"),
+    getBlueskyAuth: db.prepare(
+      "SELECT handle, did, service, access_jwt as accessJwt, refresh_jwt as refreshJwt, publication_uri as publicationUri FROM bluesky_auth WHERE id = 1",
+    ),
+    upsertBlueskyAuth: db.prepare(
+      "INSERT OR REPLACE INTO bluesky_auth (id, handle, did, service, access_jwt, refresh_jwt, publication_uri, updated_at) VALUES (1, ?, ?, ?, ?, ?, ?, datetime('now'))",
+    ),
+    deleteBlueskyAuth: db.prepare("DELETE FROM bluesky_auth WHERE id = 1"),
+    updateDocPublish: db.prepare(
+      "UPDATE documents SET published_uri = ?, published_cid = ?, published_at = datetime('now'), content_hash = ? WHERE id = ?",
+    ),
+    clearDocPublish: db.prepare(
+      "UPDATE documents SET published_uri = NULL, published_cid = NULL, published_at = NULL, content_hash = NULL WHERE id = ?",
+    ),
   };
 }
 /** Returns set of all descendant document ids under the given document (by parent_id chain). */
@@ -223,7 +292,7 @@ function reloadDatabase(): boolean {
 }
 
 const documentRPC = BrowserView.defineRPC<DocumentRPC>({
-  maxRequestTime: 5000,
+  maxRequestTime: 15000,
   handlers: {
     requests: {
       getCollections: () => dbState.getAllCollections.all() as Collection[],
@@ -427,6 +496,126 @@ const documentRPC = BrowserView.defineRPC<DocumentRPC>({
         return { success: true };
       },
       reloadDatabase: () => ({ success: reloadDatabase() }),
+      blueskyLogin: async ({ handle, appPassword }: { handle: string; appPassword: string }) => {
+        try {
+          const result = await blueskyLogin(handle, appPassword);
+          dbState.upsertBlueskyAuth.run(
+            result.handle,
+            result.did,
+            result.service,
+            result.accessJwt,
+            result.refreshJwt,
+            null, // publication_uri
+          );
+          return { success: true, handle: result.handle, did: result.did };
+        } catch (e) {
+          console.error("[bluesky] login failed:", e);
+          throw e;
+        }
+      },
+      blueskyLogout: () => {
+        clearSession();
+        dbState.deleteBlueskyAuth.run();
+        return { success: true };
+      },
+      blueskyGetSession: (): BlueskySession | null => {
+        const auth = dbState.getBlueskyAuth.get() as BlueskyAuthRow | undefined;
+        if (!auth) return null;
+        return { handle: auth.handle, did: auth.did };
+      },
+      publishDocument: async ({ id }: { id: number }) => {
+        const auth = dbState.getBlueskyAuth.get() as BlueskyAuthRow | undefined;
+        if (!auth) throw new Error("Not logged in to Bluesky");
+
+        const doc = dbState.getDocumentById.get(id) as Document | undefined;
+        if (!doc) throw new Error("Document not found");
+
+        const client = await resumeSession(auth, (accessJwt, refreshJwt) => {
+          dbState.upsertBlueskyAuth.run(
+            auth.handle,
+            auth.did,
+            auth.service,
+            accessJwt,
+            refreshJwt,
+            auth.publicationUri,
+          );
+        });
+
+        // Ensure a publication record exists
+        const publicationUri = await ensurePublication(client, auth.did, auth.publicationUri);
+        if (publicationUri !== auth.publicationUri) {
+          dbState.upsertBlueskyAuth.run(
+            auth.handle,
+            auth.did,
+            auth.service,
+            auth.accessJwt,
+            auth.refreshJwt,
+            publicationUri,
+          );
+        }
+
+        // Serialize document content using the existing adapter
+        const blocks = JSON.parse(doc.content) as PartialBlock[];
+        const lexiconContent = createLexiconContent(blocks);
+        const textContent = blocksToPlaintext(blocks);
+
+        const result = await blueskyPublishDocument(
+          client,
+          auth.did,
+          doc.title,
+          lexiconContent,
+          textContent,
+          publicationUri,
+          doc.publishedUri ?? null,
+        );
+
+        const hash = computeContentHash(doc.title, doc.content);
+        dbState.updateDocPublish.run(result.uri, result.cid, hash, id);
+
+        return { uri: result.uri, cid: result.cid };
+      },
+      unpublishDocument: async ({ id }: { id: number }) => {
+        const auth = dbState.getBlueskyAuth.get() as BlueskyAuthRow | undefined;
+        if (!auth) throw new Error("Not logged in to Bluesky");
+
+        const doc = dbState.getDocumentById.get(id) as Document | undefined;
+        if (!doc) throw new Error("Document not found");
+        if (!doc.publishedUri) throw new Error("Document is not published");
+
+        const client = await resumeSession(auth, (accessJwt, refreshJwt) => {
+          dbState.upsertBlueskyAuth.run(
+            auth.handle,
+            auth.did,
+            auth.service,
+            accessJwt,
+            refreshJwt,
+            auth.publicationUri,
+          );
+        });
+
+        await blueskyUnpublishDocument(client, auth.did, doc.publishedUri);
+        dbState.clearDocPublish.run(id);
+
+        return { success: true };
+      },
+      openExternal: ({ url }: { url: string }): { success: boolean } => {
+        const ok = Utils.openExternal(url);
+        return { success: ok };
+      },
+      getPublishStatus: ({ id }: { id: number }): PublishStatus | null => {
+        const doc = dbState.getDocumentById.get(id) as Document | undefined;
+        if (!doc) return null;
+        if (!doc.publishedUri) return { published: false };
+
+        const currentHash = computeContentHash(doc.title, doc.content);
+        return {
+          published: true,
+          uri: doc.publishedUri,
+          cid: doc.publishedCid ?? undefined,
+          publishedAt: doc.publishedAt ?? undefined,
+          isModified: currentHash !== doc.contentHash,
+        };
+      },
     },
     messages: {},
   },

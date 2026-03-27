@@ -28,6 +28,9 @@ type DocumentSidebarProps = {
   sidebarWidth?: number;
   onSidebarWidthChange?: (width: number) => void;
   onSidebarWidthChangeEnd?: (width: number) => void | Promise<void>;
+  blueskyConnected?: boolean;
+  onPublishDocument?: (id: number) => void | Promise<void>;
+  onUnpublishDocument?: (id: number) => void | Promise<void>;
 };
 
 function GearIcon({ className }: { className?: string }) {
@@ -69,6 +72,9 @@ export function DocumentSidebar({
   sidebarWidth = DEFAULT_SIDEBAR_WIDTH,
   onSidebarWidthChange,
   onSidebarWidthChangeEnd,
+  blueskyConnected,
+  onPublishDocument,
+  onUnpublishDocument,
 }: DocumentSidebarProps) {
   return (
     <Sidebar
@@ -97,6 +103,9 @@ export function DocumentSidebar({
           onIconChange={onIconChange}
           onDeleteDocument={onDeleteDocument}
           onReparentDocument={onReparentDocument}
+          blueskyConnected={blueskyConnected}
+          onPublishDocument={onPublishDocument}
+          onUnpublishDocument={onUnpublishDocument}
         />
       </div>
       {onOpenSettings && (

@@ -27,6 +27,12 @@ type DocumentListItemProps = {
   onIconChange?: (documentId: number, icon: Document["icon"]) => void | Promise<void>;
   /** Visual state when this row is the drop target (A will become child of this doc). */
   dropTargetHighlight?: "parent" | "child";
+  /** Whether Bluesky is connected. */
+  blueskyConnected?: boolean;
+  /** Called to publish/update this document to Bluesky. */
+  onPublish?: () => void | Promise<void>;
+  /** Called to unpublish this document from Bluesky. */
+  onUnpublish?: () => void | Promise<void>;
 };
 
 const DEPTH_PADDING = 12; // px per nesting level
@@ -57,6 +63,9 @@ export function DocumentListItem({
   onToggleExpand,
   onIconChange,
   dropTargetHighlight,
+  blueskyConnected = false,
+  onPublish,
+  onUnpublish,
 }: DocumentListItemProps) {
   const title = doc.title?.trim() || "Untitled";
   const indent = depth * DEPTH_PADDING;
@@ -150,7 +159,15 @@ export function DocumentListItem({
           )}
         </span>
         <span className="min-w-0 flex-1">
-          <span className="block truncate">{title}</span>
+          <span className="flex items-center gap-1">
+            <span className="block truncate">{title}</span>
+            {doc.publishedUri && (
+              <span
+                className="inline-block h-1.5 w-1.5 shrink-0 rounded-full bg-blue-400"
+                title="Published to Bluesky"
+              />
+            )}
+          </span>
         </span>
       </button>
       {(onCreateChild || onDelete) && (
@@ -184,6 +201,32 @@ export function DocumentListItem({
                     }}
                   >
                     Add sub-note
+                  </button>
+                )}
+                {blueskyConnected && onPublish && (
+                  <button
+                    type="button"
+                    role="menuitem"
+                    className="w-full px-3 py-2 text-left text-sm text-[var(--color-text)] hover:bg-surface-hover"
+                    onClick={() => {
+                      void onPublish();
+                      close();
+                    }}
+                  >
+                    {doc.publishedUri ? "Update on Bluesky" : "Publish to Bluesky"}
+                  </button>
+                )}
+                {blueskyConnected && doc.publishedUri && onUnpublish && (
+                  <button
+                    type="button"
+                    role="menuitem"
+                    className="w-full px-3 py-2 text-left text-sm text-[var(--color-text)] hover:bg-surface-hover"
+                    onClick={() => {
+                      void onUnpublish();
+                      close();
+                    }}
+                  >
+                    Unpublish
                   </button>
                 )}
                 {onDelete && (

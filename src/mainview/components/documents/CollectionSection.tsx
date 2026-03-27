@@ -29,6 +29,9 @@ type CollectionSectionProps = {
     /** Index among siblings to insert at (for manual order). Omit to append. */
     insertAtIndex?: number,
   ) => void | Promise<void>;
+  blueskyConnected?: boolean;
+  onPublishDocument?: (id: number) => void | Promise<void>;
+  onUnpublishDocument?: (id: number) => void | Promise<void>;
 };
 
 type DropData = {
@@ -133,6 +136,9 @@ function DocumentTreeItem({
   activeDrop,
   setActiveDrop,
   showAsDropTargetChild,
+  blueskyConnected,
+  onPublishDocument,
+  onUnpublishDocument,
 }: {
   doc: Document;
   depth: number;
@@ -153,6 +159,9 @@ function DocumentTreeItem({
   setActiveDrop: (d: DropData | null) => void;
   /** When true, this row is a child of the current "drop onto" target and shows lighter highlight. */
   showAsDropTargetChild?: boolean;
+  blueskyConnected?: boolean;
+  onPublishDocument?: (id: number) => void | Promise<void>;
+  onUnpublishDocument?: (id: number) => void | Promise<void>;
 }) {
   const children = getChildDocuments(byParent, doc.id);
   const [expanded, setExpanded] = useState(true);
@@ -241,6 +250,9 @@ function DocumentTreeItem({
                 ? "child"
                 : undefined
           }
+          blueskyConnected={blueskyConnected}
+          onPublish={onPublishDocument ? () => onPublishDocument(doc.id) : undefined}
+          onUnpublish={onUnpublishDocument ? () => onUnpublishDocument(doc.id) : undefined}
         />
       </div>
       <SidebarDropStrip
@@ -273,6 +285,9 @@ function DocumentTreeItem({
             activeDrop={activeDrop}
             setActiveDrop={setActiveDrop}
             showAsDropTargetChild={activeDrop?.key === `child-${doc.id}`}
+            blueskyConnected={blueskyConnected}
+            onPublishDocument={onPublishDocument}
+            onUnpublishDocument={onUnpublishDocument}
           />
         ))}
       <SidebarDropStrip
@@ -303,6 +318,9 @@ export function CollectionSection({
   onIconChange,
   onDeleteDocument,
   onReparentDocument,
+  blueskyConnected,
+  onPublishDocument,
+  onUnpublishDocument,
 }: CollectionSectionProps) {
   const [expanded, setExpanded] = useState(true);
   const [editingName, setEditingName] = useState(false);
@@ -450,6 +468,9 @@ export function CollectionSection({
                 onReparentDocument={onReparentDocument}
                 activeDrop={activeDrop}
                 setActiveDrop={setActiveDrop}
+                blueskyConnected={blueskyConnected}
+                onPublishDocument={onPublishDocument}
+                onUnpublishDocument={onUnpublishDocument}
               />
             ))}
           </div>

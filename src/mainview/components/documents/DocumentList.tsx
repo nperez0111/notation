@@ -17,6 +17,9 @@ type DocumentListProps = {
     parentId: number | null,
     insertAtIndex?: number,
   ) => void | Promise<void>;
+  blueskyConnected?: boolean;
+  onPublishDocument?: (id: number) => void | Promise<void>;
+  onUnpublishDocument?: (id: number) => void | Promise<void>;
 };
 
 export function DocumentList({
@@ -30,6 +33,9 @@ export function DocumentList({
   onIconChange,
   onDeleteDocument,
   onReparentDocument,
+  blueskyConnected,
+  onPublishDocument,
+  onUnpublishDocument,
 }: DocumentListProps) {
   return (
     <ul className="flex-1 overflow-auto py-2 pr-1" role="list">
@@ -45,6 +51,9 @@ export function DocumentList({
             onIconChange={onIconChange}
             onDeleteDocument={onDeleteDocument}
             onReparentDocument={onReparentDocument}
+            blueskyConnected={blueskyConnected}
+            onPublishDocument={onPublishDocument}
+            onUnpublishDocument={onUnpublishDocument}
           />
         </li>
       ))}

@@ -76,6 +76,29 @@ export type Document = {
   icon?: DocumentIcon;
   /** Position among siblings (same parent) for manual ordering. Default 0. */
   childOrder?: number;
+  /** AT-URI of published record on Bluesky. */
+  publishedUri?: string | null;
+  /** CID of published record on Bluesky. */
+  publishedCid?: string | null;
+  /** When the document was last published. */
+  publishedAt?: string | null;
+  /** SHA-256 hash of content at time of last publish. */
+  contentHash?: string | null;
+};
+
+/** Publish status for a document on Bluesky. */
+export type PublishStatus = {
+  published: boolean;
+  uri?: string;
+  cid?: string;
+  publishedAt?: string;
+  isModified?: boolean;
+};
+
+/** Bluesky session info returned to the UI. */
+export type BlueskySession = {
+  handle: string;
+  did: string;
 };
 
 /** Settings info returned to the UI (database path and document count for prompts). */
@@ -178,6 +201,22 @@ export type DocumentRPC = {
         response: { success: boolean };
       };
       reloadDatabase: { params: {}; response: { success: boolean } };
+      blueskyLogin: {
+        params: { handle: string; appPassword: string };
+        response: { success: boolean; handle: string; did: string };
+      };
+      blueskyLogout: { params: {}; response: { success: boolean } };
+      blueskyGetSession: { params: {}; response: BlueskySession | null };
+      publishDocument: {
+        params: { id: number };
+        response: { uri: string; cid: string };
+      };
+      unpublishDocument: { params: { id: number }; response: { success: boolean } };
+      getPublishStatus: {
+        params: { id: number };
+        response: PublishStatus | null;
+      };
+      openExternal: { params: { url: string }; response: { success: boolean } };
     };
     messages: {};
   }>;
