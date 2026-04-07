@@ -62,11 +62,11 @@ Session tokens are stored in the local SQLite database and refreshed automatical
 
 The project defines custom BlockNote lexicons for representing rich documents on ATProto:
 
-| Lexicon | Description |
-|---------|-------------|
-| `org.blocknote.schema` | Generic block, inline content, and style shapes |
-| `org.blocknote.defaultBlocks` | All 14 default BlockNote block types (paragraph, heading, table, etc.) |
-| `org.blocknote.document` | ATProto record wrapping BlockNote content with an optional schema declaration |
+| Lexicon                       | Description                                                                   |
+| ----------------------------- | ----------------------------------------------------------------------------- |
+| `org.blocknote.schema`        | Generic block, inline content, and style shapes                               |
+| `org.blocknote.defaultBlocks` | All 14 default BlockNote block types (paragraph, heading, table, etc.)        |
+| `org.blocknote.document`      | ATProto record wrapping BlockNote content with an optional schema declaration |
 
 These live in `src/lexicons/` and TypeScript types are generated with `bun run generate:lexicons` (via `@atcute/lex-cli`).
 
