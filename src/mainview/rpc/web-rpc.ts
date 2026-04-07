@@ -1,7 +1,7 @@
 /**
  * Web-based RPC implementation using XRPC calls to Nitro API routes.
  * XRPC convention: queries = GET /xrpc/<nsid>?params, procedures = POST /xrpc/<nsid> with JSON body.
- * Namespace: app.phoenix.*
+ * Namespace: ink.notation.*
  */
 
 import type { RpcMethods } from "../../shared/rpc-types";
@@ -14,36 +14,39 @@ type XrpcRoute = {
 };
 
 const routes: Record<keyof RpcMethods, XrpcRoute> = {
-  getCollections: { nsid: "app.phoenix.getCollections", type: "query" },
-  getCollection: { nsid: "app.phoenix.getCollection", type: "query" },
-  createCollection: { nsid: "app.phoenix.createCollection", type: "procedure" },
-  updateCollection: { nsid: "app.phoenix.updateCollection", type: "procedure" },
-  deleteCollection: { nsid: "app.phoenix.deleteCollection", type: "procedure" },
-  getDocuments: { nsid: "app.phoenix.getDocuments", type: "query" },
-  getDocument: { nsid: "app.phoenix.getDocument", type: "query" },
-  createDocument: { nsid: "app.phoenix.createDocument", type: "procedure" },
-  updateDocument: { nsid: "app.phoenix.updateDocument", type: "procedure" },
-  deleteDocument: { nsid: "app.phoenix.deleteDocument", type: "procedure" },
-  getPropertyDefinitions: { nsid: "app.phoenix.getPropertyDefinitions", type: "query" },
-  createPropertyDefinition: { nsid: "app.phoenix.createPropertyDefinition", type: "procedure" },
-  updatePropertyDefinition: { nsid: "app.phoenix.updatePropertyDefinition", type: "procedure" },
-  deletePropertyDefinition: { nsid: "app.phoenix.deletePropertyDefinition", type: "procedure" },
-  reorderPropertyDefinitions: { nsid: "app.phoenix.reorderPropertyDefinitions", type: "procedure" },
-  reorderChildDocuments: { nsid: "app.phoenix.reorderChildDocuments", type: "procedure" },
-  getSettings: { nsid: "app.phoenix.getSettings", type: "query" },
-  setDatabaseMetadata: { nsid: "app.phoenix.setDatabaseMetadata", type: "procedure" },
-  setSidebarWidth: { nsid: "app.phoenix.setSidebarWidth", type: "procedure" },
-  blueskyLogin: { nsid: "app.phoenix.blueskyLogin", type: "procedure" },
-  blueskyLogout: { nsid: "app.phoenix.blueskyLogout", type: "procedure" },
-  blueskyGetSession: { nsid: "app.phoenix.blueskyGetSession", type: "query" },
-  publishDocument: { nsid: "app.phoenix.publishDocument", type: "procedure" },
-  unpublishDocument: { nsid: "app.phoenix.unpublishDocument", type: "procedure" },
-  getPublishStatus: { nsid: "app.phoenix.getPublishStatus", type: "query" },
-  openExternal: { nsid: "app.phoenix.openExternal", type: "procedure" },
+  getCollections: { nsid: "ink.notation.getCollections", type: "query" },
+  getCollection: { nsid: "ink.notation.getCollection", type: "query" },
+  createCollection: { nsid: "ink.notation.createCollection", type: "procedure" },
+  updateCollection: { nsid: "ink.notation.updateCollection", type: "procedure" },
+  deleteCollection: { nsid: "ink.notation.deleteCollection", type: "procedure" },
+  getDocuments: { nsid: "ink.notation.getDocuments", type: "query" },
+  getDocument: { nsid: "ink.notation.getDocument", type: "query" },
+  createDocument: { nsid: "ink.notation.createDocument", type: "procedure" },
+  updateDocument: { nsid: "ink.notation.updateDocument", type: "procedure" },
+  deleteDocument: { nsid: "ink.notation.deleteDocument", type: "procedure" },
+  getPropertyDefinitions: { nsid: "ink.notation.getPropertyDefinitions", type: "query" },
+  createPropertyDefinition: { nsid: "ink.notation.createPropertyDefinition", type: "procedure" },
+  updatePropertyDefinition: { nsid: "ink.notation.updatePropertyDefinition", type: "procedure" },
+  deletePropertyDefinition: { nsid: "ink.notation.deletePropertyDefinition", type: "procedure" },
+  reorderPropertyDefinitions: {
+    nsid: "ink.notation.reorderPropertyDefinitions",
+    type: "procedure",
+  },
+  reorderChildDocuments: { nsid: "ink.notation.reorderChildDocuments", type: "procedure" },
+  getSettings: { nsid: "ink.notation.getSettings", type: "query" },
+  setDatabaseMetadata: { nsid: "ink.notation.setDatabaseMetadata", type: "procedure" },
+  setSidebarWidth: { nsid: "ink.notation.setSidebarWidth", type: "procedure" },
+  blueskyLogin: { nsid: "ink.notation.blueskyLogin", type: "procedure" },
+  blueskyLogout: { nsid: "ink.notation.blueskyLogout", type: "procedure" },
+  blueskyGetSession: { nsid: "ink.notation.blueskyGetSession", type: "query" },
+  publishDocument: { nsid: "ink.notation.publishDocument", type: "procedure" },
+  unpublishDocument: { nsid: "ink.notation.unpublishDocument", type: "procedure" },
+  getPublishStatus: { nsid: "ink.notation.getPublishStatus", type: "query" },
+  openExternal: { nsid: "ink.notation.openExternal", type: "procedure" },
   // Desktop-only (won't be called on web, but needed for type completeness)
-  chooseDatabaseDirectory: { nsid: "app.phoenix.chooseDatabaseDirectory", type: "query" },
-  setDatabaseLocation: { nsid: "app.phoenix.setDatabaseLocation", type: "procedure" },
-  reloadDatabase: { nsid: "app.phoenix.reloadDatabase", type: "procedure" },
+  chooseDatabaseDirectory: { nsid: "ink.notation.chooseDatabaseDirectory", type: "query" },
+  setDatabaseLocation: { nsid: "ink.notation.setDatabaseLocation", type: "procedure" },
+  reloadDatabase: { nsid: "ink.notation.reloadDatabase", type: "procedure" },
 };
 
 async function xrpcCall(route: XrpcRoute, params: Record<string, unknown>): Promise<unknown> {

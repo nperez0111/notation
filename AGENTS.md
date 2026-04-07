@@ -66,7 +66,7 @@ All CRUD functions take `DbState` as first parameter. Both `src/bun/index.ts` (E
 | **Platform-agnostic RPC type map**                             | `src/shared/rpc-types.ts`            | `RpcMethods` type — no Electrobun deps. Both platforms implement this. |
 | **RPC context**, useRpc, RpcProvider                           | `src/mainview/rpc/context.tsx`       | React context accepting any `RpcMethods` implementation.               |
 | **Electrobun RPC** implementation                              | `src/mainview/rpc/electrobun-rpc.ts` | Wraps `Electroview.defineRPC`, returns `RpcMethods`.                   |
-| **Web RPC** implementation                                     | `src/mainview/rpc/web-rpc.ts`        | Fetch-based XRPC client (`/xrpc/app.phoenix.*`).                       |
+| **Web RPC** implementation                                     | `src/mainview/rpc/web-rpc.ts`        | Fetch-based XRPC client (`/xrpc/ink.notation.*`).                      |
 | **Platform detection**                                         | `src/mainview/rpc/platform.ts`       | `isElectrobun` boolean.                                                |
 | **RPC handlers** (Electrobun side)                             | `src/bun/index.ts`                   | `BrowserView.defineRPC<DocumentRPC>` delegates to `src/db/`.           |
 
@@ -74,36 +74,36 @@ All CRUD functions take `DbState` as first parameter. Both `src/bun/index.ts` (E
 
 All web API routes live in `src/server/routes/xrpc/` using XRPC convention:
 
-- **Queries** (GET): `app.phoenix.<method>.get.ts` — read-only, params in query string
-- **Procedures** (POST): `app.phoenix.<method>.post.ts` — mutations, params in JSON body
+- **Queries** (GET): `ink.notation.<method>.get.ts` — read-only, params in query string
+- **Procedures** (POST): `ink.notation.<method>.post.ts` — mutations, params in JSON body
 
-| RPC Method                   | XRPC NSID                                | Type      |
-| ---------------------------- | ---------------------------------------- | --------- |
-| `getCollections`             | `app.phoenix.getCollections`             | query     |
-| `getCollection`              | `app.phoenix.getCollection`              | query     |
-| `createCollection`           | `app.phoenix.createCollection`           | procedure |
-| `updateCollection`           | `app.phoenix.updateCollection`           | procedure |
-| `deleteCollection`           | `app.phoenix.deleteCollection`           | procedure |
-| `getDocuments`               | `app.phoenix.getDocuments`               | query     |
-| `getDocument`                | `app.phoenix.getDocument`                | query     |
-| `createDocument`             | `app.phoenix.createDocument`             | procedure |
-| `updateDocument`             | `app.phoenix.updateDocument`             | procedure |
-| `deleteDocument`             | `app.phoenix.deleteDocument`             | procedure |
-| `getPropertyDefinitions`     | `app.phoenix.getPropertyDefinitions`     | query     |
-| `createPropertyDefinition`   | `app.phoenix.createPropertyDefinition`   | procedure |
-| `updatePropertyDefinition`   | `app.phoenix.updatePropertyDefinition`   | procedure |
-| `deletePropertyDefinition`   | `app.phoenix.deletePropertyDefinition`   | procedure |
-| `reorderPropertyDefinitions` | `app.phoenix.reorderPropertyDefinitions` | procedure |
-| `reorderChildDocuments`      | `app.phoenix.reorderChildDocuments`      | procedure |
-| `getSettings`                | `app.phoenix.getSettings`                | query     |
-| `setSidebarWidth`            | `app.phoenix.setSidebarWidth`            | procedure |
-| `setDatabaseMetadata`        | `app.phoenix.setDatabaseMetadata`        | procedure |
-| `blueskyLogin`               | `app.phoenix.blueskyLogin`               | procedure |
-| `blueskyLogout`              | `app.phoenix.blueskyLogout`              | procedure |
-| `blueskyGetSession`          | `app.phoenix.blueskyGetSession`          | query     |
-| `publishDocument`            | `app.phoenix.publishDocument`            | procedure |
-| `unpublishDocument`          | `app.phoenix.unpublishDocument`          | procedure |
-| `getPublishStatus`           | `app.phoenix.getPublishStatus`           | query     |
+| RPC Method                   | XRPC NSID                                 | Type      |
+| ---------------------------- | ----------------------------------------- | --------- |
+| `getCollections`             | `ink.notation.getCollections`             | query     |
+| `getCollection`              | `ink.notation.getCollection`              | query     |
+| `createCollection`           | `ink.notation.createCollection`           | procedure |
+| `updateCollection`           | `ink.notation.updateCollection`           | procedure |
+| `deleteCollection`           | `ink.notation.deleteCollection`           | procedure |
+| `getDocuments`               | `ink.notation.getDocuments`               | query     |
+| `getDocument`                | `ink.notation.getDocument`                | query     |
+| `createDocument`             | `ink.notation.createDocument`             | procedure |
+| `updateDocument`             | `ink.notation.updateDocument`             | procedure |
+| `deleteDocument`             | `ink.notation.deleteDocument`             | procedure |
+| `getPropertyDefinitions`     | `ink.notation.getPropertyDefinitions`     | query     |
+| `createPropertyDefinition`   | `ink.notation.createPropertyDefinition`   | procedure |
+| `updatePropertyDefinition`   | `ink.notation.updatePropertyDefinition`   | procedure |
+| `deletePropertyDefinition`   | `ink.notation.deletePropertyDefinition`   | procedure |
+| `reorderPropertyDefinitions` | `ink.notation.reorderPropertyDefinitions` | procedure |
+| `reorderChildDocuments`      | `ink.notation.reorderChildDocuments`      | procedure |
+| `getSettings`                | `ink.notation.getSettings`                | query     |
+| `setSidebarWidth`            | `ink.notation.setSidebarWidth`            | procedure |
+| `setDatabaseMetadata`        | `ink.notation.setDatabaseMetadata`        | procedure |
+| `blueskyLogin`               | `ink.notation.blueskyLogin`               | procedure |
+| `blueskyLogout`              | `ink.notation.blueskyLogout`              | procedure |
+| `blueskyGetSession`          | `ink.notation.blueskyGetSession`          | query     |
+| `publishDocument`            | `ink.notation.publishDocument`            | procedure |
+| `unpublishDocument`          | `ink.notation.unpublishDocument`          | procedure |
+| `getPublishStatus`           | `ink.notation.getPublishStatus`           | query     |
 
 Desktop-only methods (`chooseDatabaseDirectory`, `setDatabaseLocation`, `reloadDatabase`) have no XRPC endpoints. `openExternal` uses `window.open()` on web.
 
