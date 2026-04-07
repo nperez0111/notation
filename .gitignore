@@ -1,3 +1,5 @@
 node_modules
 build
 dist
+demo.db*
+atproto-key.json
