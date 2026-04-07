@@ -5,15 +5,7 @@ import Electrobun, {
   Updater,
   Utils,
 } from "electrobun/bun";
-import type {
-  BlueskySession,
-  Collection,
-  Document,
-  DocumentRPC,
-  Property,
-  PublishStatus,
-  SettingsInfo,
-} from "../shared/types";
+import type { BlueskySession, DocumentRPC, SettingsInfo } from "../shared/types";
 import {
   type BlueskyAuthRow,
   blocksToPlaintext,
@@ -24,19 +16,37 @@ import {
   unpublishDocument as blueskyUnpublishDocument,
   ensurePublication,
   resumeSession,
-} from "./bluesky";
+} from "../db/bluesky";
 import { createLexiconContent } from "../shared/atproto/serialize";
 import type { PartialBlock } from "@blocknote/core";
-import Database from "bun:sqlite";
-
-type DatabaseInstance = InstanceType<typeof Database>;
-type PreparedStatement = ReturnType<DatabaseInstance["prepare"]>;
+import {
+  type DbState,
+  DB_FILENAME,
+  createDbState,
+  getAllCollections,
+  getCollection,
+  createCollection,
+  updateCollection,
+  deleteCollection,
+  getAllDocuments,
+  getDocument,
+  createDocument,
+  updateDocument,
+  deleteDocument,
+  getPropertyDefinitions,
+  createPropertyDefinition,
+  updatePropertyDefinition,
+  deletePropertyDefinition,
+  reorderPropertyDefinitions,
+  reorderChildDocuments,
+  getPublishStatus,
+  getDocumentCount,
+} from "../db";
 import { join, basename } from "path";
 import { existsSync, mkdirSync, copyFileSync, readFileSync } from "fs";
 import { execSync } from "child_process";
 
 const SETTINGS_FILE = "settings.json";
-const DB_FILENAME = "documents.db";
 
 // Ensure data directory exists
 const dataDir = Utils.paths.userData;
@@ -51,7 +61,7 @@ function getSettingsPath(): string {
 type SettingsJson = {
   dbDirectory?: string;
   databaseName?: string;
-  databaseIcon?: string; // base64 data URL or empty
+  databaseIcon?: string;
   recentDbDirectories?: string[];
   sidebarWidth?: number;
 };
@@ -71,213 +81,9 @@ function saveSettings(settings: SettingsJson): void {
   void Bun.write(getSettingsPath(), JSON.stringify(settings, null, 2));
 }
 
-const docColumns =
-  "id, title, created_at as createdAt, updated_at as updatedAt, created_by as createdBy, updated_by as updatedBy, content, properties, collection_id as collectionId, parent_id as parentId, icon, child_order as childOrder, published_uri as publishedUri, published_cid as publishedCid, published_at as publishedAt, content_hash as contentHash";
-const collColumns = "id, name, created_at as createdAt, updated_at as updatedAt";
-const propColumns = "id, collection_id as collectionId, label, type";
-
-type DbState = {
-  db: DatabaseInstance;
-  dbPath: string;
-  dbDirectory: string;
-  getAllCollections: PreparedStatement;
-  getCollectionById: PreparedStatement;
-  insertCollection: PreparedStatement;
-  updateCollectionStmt: PreparedStatement;
-  deleteCollectionStmt: PreparedStatement;
-  getAllDocuments: PreparedStatement;
-  getDocumentById: PreparedStatement;
-  insertDocument: PreparedStatement;
-  updateDocumentStmt: PreparedStatement;
-  updateDocumentChildOrder: PreparedStatement;
-  deleteDocumentStmt: PreparedStatement;
-  getPropertiesByCollection: PreparedStatement;
-  getPropertyById: PreparedStatement;
-  insertProperty: PreparedStatement;
-  updatePropertyStmt: PreparedStatement;
-  deletePropertyStmt: PreparedStatement;
-  updatePropertyPosition: PreparedStatement;
-  getBlueskyAuth: PreparedStatement;
-  upsertBlueskyAuth: PreparedStatement;
-  deleteBlueskyAuth: PreparedStatement;
-  updateDocPublish: PreparedStatement;
-  clearDocPublish: PreparedStatement;
-};
-
-const INIT_SCHEMA = `
-  CREATE TABLE IF NOT EXISTS property_definitions (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    collection_id INTEGER NOT NULL REFERENCES collections(id),
-    label TEXT NOT NULL,
-    type TEXT NOT NULL CHECK (type IN ('string', 'number', 'date', 'time', 'checkbox')),
-    position INTEGER NOT NULL DEFAULT 0
-  );
-  CREATE TABLE IF NOT EXISTS collections (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    name TEXT NOT NULL DEFAULT 'Unnamed',
-    created_at TEXT NOT NULL DEFAULT (datetime('now')),
-    updated_at TEXT NOT NULL DEFAULT (datetime('now'))
-  );
-  CREATE TABLE IF NOT EXISTS documents (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    title TEXT NOT NULL DEFAULT '',
-    created_at TEXT NOT NULL DEFAULT (datetime('now')),
-    updated_at TEXT NOT NULL DEFAULT (datetime('now')),
-    created_by TEXT NOT NULL DEFAULT '',
-    updated_by TEXT NOT NULL DEFAULT '',
-    content TEXT NOT NULL DEFAULT '[]',
-    properties TEXT NOT NULL DEFAULT '{}',
-    collection_id INTEGER NOT NULL REFERENCES collections(id),
-    parent_id INTEGER REFERENCES documents(id),
-    icon TEXT,
-    child_order INTEGER NOT NULL DEFAULT 0
-  );
-  CREATE TABLE IF NOT EXISTS bluesky_auth (
-    id INTEGER PRIMARY KEY CHECK (id = 1),
-    handle TEXT NOT NULL,
-    did TEXT NOT NULL,
-    service TEXT NOT NULL,
-    access_jwt TEXT NOT NULL,
-    refresh_jwt TEXT NOT NULL,
-    publication_uri TEXT,
-    updated_at TEXT NOT NULL DEFAULT (datetime('now'))
-  );
-`;
-
-function createDbState(dbDirectory: string): DbState {
-  if (!existsSync(dbDirectory)) {
-    mkdirSync(dbDirectory, { recursive: true });
-  }
-  const dbPath = join(dbDirectory, DB_FILENAME);
-  const db = new Database(dbPath, { create: true });
-
-  db.exec(INIT_SCHEMA);
-
-  // Single migration: ensure columns exist for DBs created before final schema (no multi-stage).
-  try {
-    db.exec("ALTER TABLE documents ADD COLUMN icon TEXT");
-  } catch {
-    // Column already exists
-  }
-  // Migration: property_definitions per collection (add collection_id, backfill, then enforce).
-  try {
-    db.exec(
-      "ALTER TABLE property_definitions ADD COLUMN collection_id INTEGER REFERENCES collections(id)",
-    );
-    db.exec(
-      "UPDATE property_definitions SET collection_id = (SELECT id FROM collections LIMIT 1) WHERE collection_id IS NULL",
-    );
-  } catch {
-    // Column already exists (new schema)
-  }
-  try {
-    db.exec("ALTER TABLE documents ADD COLUMN child_order INTEGER NOT NULL DEFAULT 0");
-  } catch {
-    // Column already exists
-  }
-  try {
-    db.exec("ALTER TABLE documents ADD COLUMN published_uri TEXT");
-  } catch {
-    // Column already exists
-  }
-  try {
-    db.exec("ALTER TABLE documents ADD COLUMN published_cid TEXT");
-  } catch {
-    // Column already exists
-  }
-  try {
-    db.exec("ALTER TABLE documents ADD COLUMN published_at TEXT");
-  } catch {
-    // Column already exists
-  }
-  try {
-    db.exec("ALTER TABLE documents ADD COLUMN content_hash TEXT");
-  } catch {
-    // Column already exists
-  }
-
-  if (!db.query("SELECT id FROM collections LIMIT 1").get()) {
-    db.exec("INSERT INTO collections (name) VALUES ('Default')");
-  }
-
-  return {
-    db,
-    dbPath,
-    dbDirectory,
-    getAllCollections: db.prepare(`SELECT ${collColumns} FROM collections ORDER BY name`),
-    getCollectionById: db.prepare(`SELECT ${collColumns} FROM collections WHERE id = ?`),
-    insertCollection: db.prepare(
-      `INSERT INTO collections (name) VALUES (?) RETURNING ${collColumns}`,
-    ),
-    updateCollectionStmt: db.prepare(
-      `UPDATE collections SET name = ?, updated_at = datetime('now') WHERE id = ? RETURNING ${collColumns}`,
-    ),
-    deleteCollectionStmt: db.prepare("DELETE FROM collections WHERE id = ?"),
-    getAllDocuments: db.prepare(
-      `SELECT ${docColumns} FROM documents ORDER BY collection_id, updated_at DESC`,
-    ),
-    getDocumentById: db.prepare(`SELECT ${docColumns} FROM documents WHERE id = ?`),
-    insertDocument: db.prepare(
-      `INSERT INTO documents (title, content, created_by, updated_by, properties, collection_id, parent_id, icon, child_order) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING ${docColumns}`,
-    ),
-    updateDocumentStmt: db.prepare(
-      `UPDATE documents SET title = COALESCE(?, title), content = COALESCE(?, content), updated_by = ?, updated_at = datetime('now'), properties = COALESCE(?, properties), collection_id = COALESCE(?, collection_id), parent_id = ?, icon = ?, child_order = COALESCE(?, child_order) WHERE id = ? RETURNING ${docColumns}`,
-    ),
-    updateDocumentChildOrder: db.prepare(
-      "UPDATE documents SET child_order = ?, updated_at = datetime('now') WHERE id = ?",
-    ),
-    deleteDocumentStmt: db.prepare("DELETE FROM documents WHERE id = ?"),
-    getPropertiesByCollection: db.prepare(
-      `SELECT ${propColumns} FROM property_definitions WHERE collection_id = ? ORDER BY position ASC, id ASC`,
-    ),
-    getPropertyById: db.prepare(`SELECT ${propColumns} FROM property_definitions WHERE id = ?`),
-    insertProperty: db.prepare(
-      `INSERT INTO property_definitions (collection_id, label, type) VALUES (?, ?, ?) RETURNING ${propColumns}`,
-    ),
-    updatePropertyStmt: db.prepare(
-      `UPDATE property_definitions SET label = COALESCE(?, label), type = COALESCE(?, type) WHERE id = ? RETURNING ${propColumns}`,
-    ),
-    deletePropertyStmt: db.prepare("DELETE FROM property_definitions WHERE id = ?"),
-    updatePropertyPosition: db.prepare("UPDATE property_definitions SET position = ? WHERE id = ?"),
-    getBlueskyAuth: db.prepare(
-      "SELECT handle, did, service, access_jwt as accessJwt, refresh_jwt as refreshJwt, publication_uri as publicationUri FROM bluesky_auth WHERE id = 1",
-    ),
-    upsertBlueskyAuth: db.prepare(
-      "INSERT OR REPLACE INTO bluesky_auth (id, handle, did, service, access_jwt, refresh_jwt, publication_uri, updated_at) VALUES (1, ?, ?, ?, ?, ?, ?, datetime('now'))",
-    ),
-    deleteBlueskyAuth: db.prepare("DELETE FROM bluesky_auth WHERE id = 1"),
-    updateDocPublish: db.prepare(
-      "UPDATE documents SET published_uri = ?, published_cid = ?, published_at = datetime('now'), content_hash = ? WHERE id = ?",
-    ),
-    clearDocPublish: db.prepare(
-      "UPDATE documents SET published_uri = NULL, published_cid = NULL, published_at = NULL, content_hash = NULL WHERE id = ?",
-    ),
-  };
-}
-/** Returns set of all descendant document ids under the given document (by parent_id chain). */
-function getDescendantIds(documents: Document[], parentId: number): Set<number> {
-  const byParent = new Map<number | null, Document[]>();
-  for (const d of documents) {
-    const key = d.parentId;
-    if (!byParent.has(key)) byParent.set(key, []);
-    byParent.get(key)!.push(d);
-  }
-  const out = new Set<number>();
-  const stack = [parentId];
-  while (stack.length > 0) {
-    const id = stack.pop()!;
-    const children = byParent.get(id) ?? [];
-    for (const c of children) {
-      out.add(c.id);
-      stack.push(c.id);
-    }
-  }
-  return out;
-}
-
 const initialSettings = loadSettings();
 const initialDbDirectory = initialSettings.dbDirectory ?? dataDir;
-let dbState = createDbState(initialDbDirectory);
+let dbState: DbState = createDbState(initialDbDirectory);
 
 function reloadDatabase(): boolean {
   try {
@@ -295,144 +101,31 @@ const documentRPC = BrowserView.defineRPC<DocumentRPC>({
   maxRequestTime: 15000,
   handlers: {
     requests: {
-      getCollections: () => dbState.getAllCollections.all() as Collection[],
-      getCollection: ({ id }) => (dbState.getCollectionById.get(id) as Collection) ?? null,
-      createCollection: ({ name }) => dbState.insertCollection.get(name) as Collection,
-      updateCollection: ({ id, name }) => {
-        const updated = dbState.updateCollectionStmt.get(name, id) as Collection | undefined;
-        return updated ?? null;
-      },
-      deleteCollection: ({ id }) => {
-        const other = dbState.db
-          .prepare("SELECT id FROM collections WHERE id != ? LIMIT 1")
-          .get(id) as { id: number } | undefined;
-        if (other) {
-          dbState.db
-            .prepare("UPDATE documents SET collection_id = ? WHERE collection_id = ?")
-            .run(other.id, id);
-        } else {
-          dbState.db.prepare("DELETE FROM documents WHERE collection_id = ?").run(id);
-        }
-        dbState.db.prepare("DELETE FROM property_definitions WHERE collection_id = ?").run(id);
-        dbState.deleteCollectionStmt.run(id);
-        return { success: true };
-      },
-      getDocuments: () => dbState.getAllDocuments.all() as Document[],
-      getDocument: ({ id }) => (dbState.getDocumentById.get(id) as Document) ?? null,
-      createDocument: ({
-        title,
-        content,
-        createdBy,
-        updatedBy,
-        properties,
-        collectionId,
-        parentId,
-        icon,
-      }) => {
-        const props = properties ?? "{}";
-        return dbState.insertDocument.get(
-          title,
-          content,
-          createdBy,
-          updatedBy,
-          props,
-          collectionId,
-          parentId ?? null,
-          icon ?? null,
-          0, // child_order
-        ) as Document;
-      },
-      updateDocument: ({
-        id,
-        title,
-        content,
-        updatedBy,
-        properties,
-        collectionId,
-        parentId,
-        icon,
-      }) => {
-        const row = dbState.getDocumentById.get(id) as Document | undefined;
-        if (!row) return null;
-        const newTitle = title ?? row.title;
-        const newContent = content ?? row.content;
-        const newProps = properties ?? row.properties;
-        const newCollectionId = collectionId ?? row.collectionId;
-        const newParentId = parentId !== undefined ? parentId : row.parentId;
-        const newIcon = icon !== undefined ? icon : (row as { icon?: string | null }).icon;
-
-        // Enforce: cannot move a document into itself or into one of its descendants (no-op)
-        if (parentId !== undefined && newParentId !== null) {
-          if (newParentId === id) return row;
-          const allDocs = dbState.getAllDocuments.all() as Document[];
-          const inCollection = allDocs.filter((d) => d.collectionId === newCollectionId);
-          const descendantsOfSource = getDescendantIds(inCollection, id);
-          if (descendantsOfSource.has(newParentId)) return row;
-        }
-
-        const currentChildOrder = (row as { childOrder?: number }).childOrder ?? 0;
-        const updated = dbState.updateDocumentStmt.get(
-          newTitle,
-          newContent,
-          updatedBy,
-          newProps,
-          newCollectionId,
-          newParentId,
-          newIcon ?? null,
-          currentChildOrder, // leave unchanged unless reorderChildDocuments
-          id,
-        ) as Document | undefined;
-        return updated ?? null;
-      },
-      deleteDocument: ({ id }) => {
-        // Cascade delete: collect all descendant ids then delete them all
-        const stack = [id];
-        const toDelete: number[] = [];
-        while (stack.length > 0) {
-          const current = stack.pop()!;
-          toDelete.push(current);
-          const children = dbState.db
-            .prepare("SELECT id FROM documents WHERE parent_id = ?")
-            .all(current) as { id: number }[];
-          for (const child of children) stack.push(child.id);
-        }
-        const placeholders = toDelete.map(() => "?").join(",");
-        dbState.db.prepare(`DELETE FROM documents WHERE id IN (${placeholders})`).run(...toDelete);
-        return { success: true };
-      },
-      getPropertyDefinitions: ({ collectionId }) =>
-        dbState.getPropertiesByCollection.all(collectionId) as Property[],
+      getCollections: () => getAllCollections(dbState),
+      getCollection: ({ id }) => getCollection(dbState, id),
+      createCollection: ({ name }) => createCollection(dbState, name),
+      updateCollection: ({ id, name }) => updateCollection(dbState, id, name),
+      deleteCollection: ({ id }) => deleteCollection(dbState, id),
+      getDocuments: () => getAllDocuments(dbState),
+      getDocument: ({ id }) => getDocument(dbState, id),
+      createDocument: (params) => createDocument(dbState, params),
+      updateDocument: (params) => updateDocument(dbState, params),
+      deleteDocument: ({ id }) => deleteDocument(dbState, id),
+      getPropertyDefinitions: ({ collectionId }) => getPropertyDefinitions(dbState, collectionId),
       createPropertyDefinition: ({ collectionId, label, type }) =>
-        dbState.insertProperty.get(collectionId, label, type) as Property,
-      updatePropertyDefinition: ({ id, label, type }) => {
-        const row = dbState.getPropertyById.get(id) as Property | undefined;
-        if (!row) return null;
-        const updated = dbState.updatePropertyStmt.get(label ?? row.label, type ?? row.type, id) as
-          | Property
-          | undefined;
-        return updated ?? null;
-      },
-      deletePropertyDefinition: ({ id }) => {
-        dbState.deletePropertyStmt.run(id);
-        return { success: true };
-      },
+        createPropertyDefinition(dbState, collectionId, label, type),
+      updatePropertyDefinition: ({ id, label, type }) =>
+        updatePropertyDefinition(dbState, id, label, type),
+      deletePropertyDefinition: ({ id }) => deletePropertyDefinition(dbState, id),
       reorderPropertyDefinitions: ({ orderedIds }) => {
-        orderedIds.forEach((id, position) => {
-          dbState.updatePropertyPosition.run(position, id);
-        });
+        reorderPropertyDefinitions(dbState, orderedIds);
         return undefined;
       },
       reorderChildDocuments: ({ orderedIds }) => {
-        orderedIds.forEach((id, index) => {
-          dbState.updateDocumentChildOrder.run(index, id);
-        });
+        reorderChildDocuments(dbState, orderedIds);
       },
       getSettings: (): SettingsInfo => {
-        const count = (
-          dbState.db.query("SELECT COUNT(*) as c FROM documents").get() as {
-            c: number;
-          }
-        ).c;
+        const count = getDocumentCount(dbState);
         const s = loadSettings();
         const dbName = s.databaseName ?? basename(dbState.dbDirectory);
         const recentRaw = (s.recentDbDirectories ?? []).filter((d) => d !== dbState.dbDirectory);
@@ -505,7 +198,7 @@ const documentRPC = BrowserView.defineRPC<DocumentRPC>({
             result.service,
             result.accessJwt,
             result.refreshJwt,
-            null, // publication_uri
+            null,
           );
           return { success: true, handle: result.handle, did: result.did };
         } catch (e) {
@@ -527,7 +220,7 @@ const documentRPC = BrowserView.defineRPC<DocumentRPC>({
         const auth = dbState.getBlueskyAuth.get() as BlueskyAuthRow | undefined;
         if (!auth) throw new Error("Not logged in to Bluesky");
 
-        const doc = dbState.getDocumentById.get(id) as Document | undefined;
+        const doc = getDocument(dbState, id);
         if (!doc) throw new Error("Document not found");
 
         const client = await resumeSession(auth, (accessJwt, refreshJwt) => {
@@ -541,7 +234,6 @@ const documentRPC = BrowserView.defineRPC<DocumentRPC>({
           );
         });
 
-        // Ensure a publication record exists
         const publicationUri = await ensurePublication(client, auth.did, auth.publicationUri);
         if (publicationUri !== auth.publicationUri) {
           dbState.upsertBlueskyAuth.run(
@@ -554,7 +246,6 @@ const documentRPC = BrowserView.defineRPC<DocumentRPC>({
           );
         }
 
-        // Serialize document content using the existing adapter
         const blocks = JSON.parse(doc.content) as PartialBlock[];
         const lexiconContent = createLexiconContent(blocks);
         const textContent = blocksToPlaintext(blocks);
@@ -578,7 +269,7 @@ const documentRPC = BrowserView.defineRPC<DocumentRPC>({
         const auth = dbState.getBlueskyAuth.get() as BlueskyAuthRow | undefined;
         if (!auth) throw new Error("Not logged in to Bluesky");
 
-        const doc = dbState.getDocumentById.get(id) as Document | undefined;
+        const doc = getDocument(dbState, id);
         if (!doc) throw new Error("Document not found");
         if (!doc.publishedUri) throw new Error("Document is not published");
 
@@ -602,20 +293,7 @@ const documentRPC = BrowserView.defineRPC<DocumentRPC>({
         const ok = Utils.openExternal(url);
         return { success: ok };
       },
-      getPublishStatus: ({ id }: { id: number }): PublishStatus | null => {
-        const doc = dbState.getDocumentById.get(id) as Document | undefined;
-        if (!doc) return null;
-        if (!doc.publishedUri) return { published: false };
-
-        const currentHash = computeContentHash(doc.title, doc.content);
-        return {
-          published: true,
-          uri: doc.publishedUri,
-          cid: doc.publishedCid ?? undefined,
-          publishedAt: doc.publishedAt ?? undefined,
-          isModified: currentHash !== doc.contentHash,
-        };
-      },
+      getPublishStatus: ({ id }) => getPublishStatus(dbState, id),
     },
     messages: {},
   },
@@ -641,8 +319,6 @@ async function getMainViewUrl(): Promise<string> {
 const APP_NAME = "Note Taker";
 const isMac = process.platform === "darwin";
 
-// Application menu: set after window + deferred so native bridge receives the config (fixes macOS "Unable to parse empty data").
-// macOS: first item is { submenu } only (app menu); Windows: File first with Settings.
 function buildApplicationMenu(): Parameters<typeof ApplicationMenu.setApplicationMenu>[0] {
   const appSubmenu = [
     { label: "Settings…", action: "open-settings", accelerator: "," },
@@ -714,7 +390,7 @@ const mainWindow = new BrowserWindow({
   },
 });
 
-// Defer so native bridge has the string when it reads it (macOS); same pattern on Windows for consistency.
+// Defer so native bridge has the string when it reads it (macOS)
 setTimeout(() => {
   ApplicationMenu.setApplicationMenu(buildApplicationMenu());
 }, 100);

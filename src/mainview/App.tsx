@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { useRpc } from "./electroview";
+import { useRpc } from "./rpc/context";
 import { useTheme } from "./themeContext";
 import type {
   BlueskySession,
