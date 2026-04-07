@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Modal } from "baseui/modal";
 import { Select } from "baseui/select";
 import { Button } from "baseui/button";
-import { useRpc } from "../../electroview";
+import { useRpc } from "../../rpc/context";
 import type { ThemeOption } from "../../themeContext";
 import type { BlueskySession, SettingsInfo } from "../../../shared/types";
 

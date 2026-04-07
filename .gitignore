@@ -3,3 +3,6 @@ build
 dist
 demo.db*
 atproto-key.json
+.data
+.output
+.nitro

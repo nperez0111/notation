@@ -3,6 +3,8 @@
  *
  * Handles authentication via app passwords, session management with auto-refresh,
  * and publishing/unpublishing documents as site.standard.document records.
+ *
+ * Portable: no Electrobun or platform-specific dependencies.
  */
 
 import { Client, CredentialManager, simpleFetchHandler } from "@atcute/client";
@@ -12,6 +14,7 @@ import type { Did, Handle } from "@atcute/lexicons/syntax";
 import "@atcute/atproto";
 import "@atcute/standard-site";
 import type { Content as LexiconContent } from "../generated/lexicons/types/org/blocknote/document";
+import { createHash } from "crypto";
 
 // Re-export for convenience
 export type { LexiconContent };
@@ -87,13 +90,9 @@ async function resolvePds(did: string): Promise<string> {
  * Resolves the handle -> DID -> PDS, then authenticates against the PDS.
  */
 export async function login(handle: string, appPassword: string): Promise<LoginResult> {
-  // Step 1: Resolve handle to DID
   const did = await resolveHandle(handle);
-
-  // Step 2: Resolve DID to PDS endpoint
   const pdsUri = await resolvePds(did);
 
-  // Step 3: Authenticate against the actual PDS
   console.log(`[bluesky] logging in to PDS: ${pdsUri}`);
   const manager = new CredentialManager({ service: pdsUri });
   const session = await manager.login({
@@ -194,15 +193,12 @@ export function blocksToPlaintext(blocks: unknown[]): string {
 
   for (const block of blocks) {
     const b = block as Record<string, unknown>;
-    // Extract text from inline content array
     if (Array.isArray(b.content)) {
       const contentItem = b.content as unknown[];
-      // Check if it's inline content (array of {type, text} objects) or table content
       if (
         contentItem.length > 0 &&
         typeof (contentItem[0] as Record<string, unknown>).text === "string"
       ) {
-        // Inline content: array of styled text / link objects
         const text = contentItem
           .map((item) => {
             const ic = item as Record<string, unknown>;
@@ -217,7 +213,6 @@ export function blocksToPlaintext(blocks: unknown[]): string {
         contentItem.length > 0 &&
         (contentItem[0] as Record<string, unknown>).type === "tableContent"
       ) {
-        // Table content - extract cell text
         const tc = contentItem[0] as Record<string, unknown>;
         if (Array.isArray(tc.rows)) {
           for (const row of tc.rows as { cells: { content: { text?: string }[] }[] }[]) {
@@ -229,7 +224,6 @@ export function blocksToPlaintext(blocks: unknown[]): string {
         }
       }
     }
-    // Recurse into children
     if (Array.isArray(b.children) && b.children.length > 0) {
       const childText = blocksToPlaintext(b.children as unknown[]);
       if (childText) lines.push(childText);
@@ -322,10 +316,11 @@ export async function unpublishDocument(client: Client, did: string, uri: string
 
 /**
  * Compute a SHA-256 content hash for change detection.
+ * Uses Node.js crypto module (compatible with both Bun and Node.js).
  */
 export function computeContentHash(title: string, content: string): string {
-  const hasher = new Bun.CryptoHasher("sha256");
-  hasher.update(title);
-  hasher.update(content);
-  return hasher.digest("hex");
+  const hash = createHash("sha256");
+  hash.update(title);
+  hash.update(content);
+  return hash.digest("hex");
 }

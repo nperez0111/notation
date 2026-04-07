@@ -6,9 +6,10 @@ Use this file as a table of contents: **keywords → files**. Read the listed fi
 
 ## What this project is
 
-**Prototype notion-like note-taking app** built on [ATProto](https://atproto.com/docs), targeting both a website and a native desktop application. The native app is built with [Electrobun](https://blackboard.sh/electrobun/llms.txt) (Bun main process + WebKit webview — not Electron). Documents are stored locally in SQLite; ATProto integration is the foundation for syncing and identity.
+**Prototype notion-like note-taking app** built on [ATProto](https://atproto.com/docs), targeting both a website and a native desktop application. The native app is built with [Electrobun](https://blackboard.sh/electrobun/llms.txt) (Bun main process + WebKit webview — not Electron). The web app uses [Nitro](https://nitro.build/llms.txt) (via Vite plugin) with XRPC-style API routes. Documents are stored locally in SQLite; ATProto integration is the foundation for syncing and identity.
 
 - **[Electrobun](https://blackboard.sh/electrobun/llms.txt)** — desktop shell (Bun main process + webview), not Electron.
+- **[Nitro](https://nitro.build/llms.txt)** — full-stack web server (Vite plugin), serves the same React frontend with XRPC API routes.
 - **[ATProto](https://atproto.com/docs)** — decentralized protocol for identity and data sync.
 - **[BlockNote](https://www.blocknotejs.org/llms.txt)** — block-based rich text editor.
 - **Base UI** — component library for modals, pickers, etc. (with Styletron).
@@ -16,60 +17,95 @@ Use this file as a table of contents: **keywords → files**. Read the listed fi
 
 ---
 
-## Entry points and config
+## Architecture overview
 
-| Keyword                                     | File                    | Notes                                                                              |
-| ------------------------------------------- | ----------------------- | ---------------------------------------------------------------------------------- |
-| **Electrobun config**, build, views         | `electrobun.config.ts`  | App name, build copy (dist → views/mainview), watch ignore.                        |
-| **Main process**, Bun, window, DB bootstrap | `src/bun/index.ts`      | BrowserWindow, RPC handlers, SQLite, settings.json, `views://mainview/index.html`. |
-| **Frontend entry**, React root, providers   | `src/mainview/main.tsx` | Styletron, ThemeProvider, RpcProvider, App.                                        |
-| **Vite**                                    | `vite.config.ts`        | Bundling for mainview.                                                             |
-| **Tailwind**                                | `tailwind.config.js`    | PostCSS in `postcss.config.js`.                                                    |
+The app has **two targets** sharing the same React frontend:
+
+1. **Desktop (Electrobun)**: `src/bun/index.ts` → Electrobun IPC → frontend
+2. **Web (Nitro)**: `src/server/routes/xrpc/` → HTTP XRPC → frontend
+
+Both targets share:
+
+- **Database layer**: `src/db/` (SQLite schema, CRUD, Bluesky client)
+- **Frontend**: `src/mainview/` (React + BlockNote + Base UI)
+- **RPC abstraction**: `src/mainview/rpc/` (platform-agnostic `useRpc()` hook)
+- **Shared types**: `src/shared/` (domain types + platform-agnostic RPC type map)
 
 ---
 
-## Shared types and RPC
+## Entry points and config
 
-| Keyword                                                              | File                           | Notes                                                           |
-| -------------------------------------------------------------------- | ------------------------------ | --------------------------------------------------------------- |
-| **Types**: Document, Collection, Property, SettingsInfo, DocumentRPC | `src/shared/types.ts`          | Single source of truth for domain and RPC schema.               |
-| **RPC client**, useRpc, RpcProvider                                  | `src/mainview/electroview.tsx` | Electroview.defineRPC, context for `rpc.request`.               |
-| **RPC handlers** (Bun side)                                          | `src/bun/index.ts`             | `BrowserView.defineRPC<DocumentRPC>` with all request handlers. |
+| Keyword                                   | File                    | Notes                                                                |
+| ----------------------------------------- | ----------------------- | -------------------------------------------------------------------- |
+| **Electrobun config**, build, views       | `electrobun.config.ts`  | App name, build copy (dist → views/mainview), watch ignore.          |
+| **Main process**, Bun, window, RPC wiring | `src/bun/index.ts`      | BrowserWindow, RPC handlers (delegates to `src/db/`), settings.json. |
+| **Frontend entry**, React root, providers | `src/mainview/main.tsx` | Platform detection, RpcProvider, Styletron, ThemeProvider, App.      |
+| **Vite (desktop)**                        | `vite.config.ts`        | Bundling for Electrobun mainview.                                    |
+| **Vite (web)**                            | `vite.config.web.ts`    | Vite + Nitro plugin for web app. `bun run dev:web` to start.         |
+| **Tailwind**                              | `tailwind.config.js`    | PostCSS in `postcss.config.js`.                                      |
 
-### RPC methods (`DocumentRPC`) — defined in `src/shared/types.ts`, implemented in `src/bun/index.ts`
+---
 
-**Bun → webview** (main process calls these on the frontend):
+## Database layer (portable)
 
-| Method         | Params | Response                                          |
-| -------------- | ------ | ------------------------------------------------- |
-| `openSettings` | —      | `void` — triggered from app menu Preferences item |
+| Keyword                                | File                | Notes                                                                   |
+| -------------------------------------- | ------------------- | ----------------------------------------------------------------------- |
+| **Schema DDL**, migrations             | `src/db/schema.ts`  | `INIT_SCHEMA`, `runMigrations()`, `ensureDefaultCollection()`.          |
+| **DbState**, CRUD functions            | `src/db/index.ts`   | `createDbState()`, all standalone CRUD functions, `getDescendantIds()`. |
+| **Bluesky client**, ATProto publishing | `src/db/bluesky.ts` | Login, session management, publish/unpublish, content hashing.          |
 
-**Webview → Bun** (frontend calls these on the backend):
+All CRUD functions take `DbState` as first parameter. Both `src/bun/index.ts` (Electrobun) and `src/server/utils/db.ts` (Nitro) create their own `DbState` instances.
 
-| Method                       | Params                                                                              | Response                                |
-| ---------------------------- | ----------------------------------------------------------------------------------- | --------------------------------------- |
-| `getCollections`             | —                                                                                   | `Collection[]`                          |
-| `getCollection`              | `id`                                                                                | `Collection \| null`                    |
-| `createCollection`           | `name`                                                                              | `Collection`                            |
-| `updateCollection`           | `id, name`                                                                          | `Collection \| null`                    |
-| `deleteCollection`           | `id`                                                                                | `{ success }`                           |
-| `getDocuments`               | —                                                                                   | `Document[]`                            |
-| `getDocument`                | `id`                                                                                | `Document \| null`                      |
-| `createDocument`             | `title, content, createdBy, updatedBy, collectionId, parentId?, icon?, properties?` | `Document`                              |
-| `updateDocument`             | `id, updatedBy, title?, content?, collectionId?, parentId?, icon?, properties?`     | `Document \| null`                      |
-| `deleteDocument`             | `id`                                                                                | `{ success }`                           |
-| `getPropertyDefinitions`     | `collectionId`                                                                      | `Property[]`                            |
-| `createPropertyDefinition`   | `collectionId, label, type`                                                         | `Property`                              |
-| `updatePropertyDefinition`   | `id, label?, type?`                                                                 | `Property \| null`                      |
-| `deletePropertyDefinition`   | `id`                                                                                | `{ success }`                           |
-| `reorderPropertyDefinitions` | `orderedIds`                                                                        | `void`                                  |
-| `reorderChildDocuments`      | `collectionId, parentId, orderedIds`                                                | `void`                                  |
-| `getSettings`                | —                                                                                   | `SettingsInfo`                          |
-| `chooseDatabaseDirectory`    | —                                                                                   | `string \| null` — opens OS file picker |
-| `setDatabaseLocation`        | `directory, mode: "new"\|"move"`                                                    | `{ success }`                           |
-| `setDatabaseMetadata`        | `name?, icon?`                                                                      | `{ success }`                           |
-| `setSidebarWidth`            | `width`                                                                             | `{ success }`                           |
-| `reloadDatabase`             | —                                                                                   | `{ success }`                           |
+---
+
+## RPC layer
+
+| Keyword                                                        | File                                 | Notes                                                                  |
+| -------------------------------------------------------------- | ------------------------------------ | ---------------------------------------------------------------------- |
+| **Domain types**: Document, Collection, Property, SettingsInfo | `src/shared/types.ts`                | Single source of truth for domain types. `DocumentRPC` for Electrobun. |
+| **Platform-agnostic RPC type map**                             | `src/shared/rpc-types.ts`            | `RpcMethods` type — no Electrobun deps. Both platforms implement this. |
+| **RPC context**, useRpc, RpcProvider                           | `src/mainview/rpc/context.tsx`       | React context accepting any `RpcMethods` implementation.               |
+| **Electrobun RPC** implementation                              | `src/mainview/rpc/electrobun-rpc.ts` | Wraps `Electroview.defineRPC`, returns `RpcMethods`.                   |
+| **Web RPC** implementation                                     | `src/mainview/rpc/web-rpc.ts`        | Fetch-based XRPC client (`/xrpc/ink.notation.*`).                      |
+| **Platform detection**                                         | `src/mainview/rpc/platform.ts`       | `isElectrobun` boolean.                                                |
+| **RPC handlers** (Electrobun side)                             | `src/bun/index.ts`                   | `BrowserView.defineRPC<DocumentRPC>` delegates to `src/db/`.           |
+
+### XRPC routes (web backend)
+
+All web API routes live in `src/server/routes/xrpc/` using XRPC convention:
+
+- **Queries** (GET): `ink.notation.<method>.get.ts` — read-only, params in query string
+- **Procedures** (POST): `ink.notation.<method>.post.ts` — mutations, params in JSON body
+
+| RPC Method                   | XRPC NSID                                 | Type      |
+| ---------------------------- | ----------------------------------------- | --------- |
+| `getCollections`             | `ink.notation.getCollections`             | query     |
+| `getCollection`              | `ink.notation.getCollection`              | query     |
+| `createCollection`           | `ink.notation.createCollection`           | procedure |
+| `updateCollection`           | `ink.notation.updateCollection`           | procedure |
+| `deleteCollection`           | `ink.notation.deleteCollection`           | procedure |
+| `getDocuments`               | `ink.notation.getDocuments`               | query     |
+| `getDocument`                | `ink.notation.getDocument`                | query     |
+| `createDocument`             | `ink.notation.createDocument`             | procedure |
+| `updateDocument`             | `ink.notation.updateDocument`             | procedure |
+| `deleteDocument`             | `ink.notation.deleteDocument`             | procedure |
+| `getPropertyDefinitions`     | `ink.notation.getPropertyDefinitions`     | query     |
+| `createPropertyDefinition`   | `ink.notation.createPropertyDefinition`   | procedure |
+| `updatePropertyDefinition`   | `ink.notation.updatePropertyDefinition`   | procedure |
+| `deletePropertyDefinition`   | `ink.notation.deletePropertyDefinition`   | procedure |
+| `reorderPropertyDefinitions` | `ink.notation.reorderPropertyDefinitions` | procedure |
+| `reorderChildDocuments`      | `ink.notation.reorderChildDocuments`      | procedure |
+| `getSettings`                | `ink.notation.getSettings`                | query     |
+| `setSidebarWidth`            | `ink.notation.setSidebarWidth`            | procedure |
+| `setDatabaseMetadata`        | `ink.notation.setDatabaseMetadata`        | procedure |
+| `blueskyLogin`               | `ink.notation.blueskyLogin`               | procedure |
+| `blueskyLogout`              | `ink.notation.blueskyLogout`              | procedure |
+| `blueskyGetSession`          | `ink.notation.blueskyGetSession`          | query     |
+| `publishDocument`            | `ink.notation.publishDocument`            | procedure |
+| `unpublishDocument`          | `ink.notation.unpublishDocument`          | procedure |
+| `getPublishStatus`           | `ink.notation.getPublishStatus`           | query     |
+
+Desktop-only methods (`chooseDatabaseDirectory`, `setDatabaseLocation`, `reloadDatabase`) have no XRPC endpoints. `openExternal` uses `window.open()` on web.
 
 ---
 
@@ -129,12 +165,15 @@ Use this file as a table of contents: **keywords → files**. Read the listed fi
 
 ---
 
-## Persistence (Bun / backend)
+## Persistence
 
-| Keyword                                 | File               | Notes                                                                                    |
-| --------------------------------------- | ------------------ | ---------------------------------------------------------------------------------------- |
-| **SQLite**, schema, CRUD, settings file | `src/bun/index.ts` | `documents.db`, collections/documents/property_definitions, `settings.json` in userData. |
-| **Database path**, userData             | `src/bun/index.ts` | `Utils.paths.userData`, `setDatabaseLocation`, `reloadDatabase`.                         |
+| Keyword                                | File                     | Notes                                                                  |
+| -------------------------------------- | ------------------------ | ---------------------------------------------------------------------- |
+| **SQLite schema + migrations**         | `src/db/schema.ts`       | `INIT_SCHEMA`, column migrations, default collection.                  |
+| **Database CRUD**                      | `src/db/index.ts`        | `createDbState()`, all CRUD functions as standalone exports.           |
+| **Bluesky/ATProto client**             | `src/db/bluesky.ts`      | Auth, session, publish/unpublish. Portable (no Bun-specific crypto).   |
+| **Electrobun settings** (desktop only) | `src/bun/index.ts`       | `settings.json` in `Utils.paths.userData`.                             |
+| **Nitro DB singleton** (web only)      | `src/server/utils/db.ts` | `getDb()` — lazy init, path from `PHOENIX_DB_DIR` env var or `.data/`. |
 
 ---
 
@@ -165,10 +204,12 @@ This runs `oxlint --type-aware && tsgo --noEmit && oxfmt --check .` — linting,
 
 ## Quick lookup by topic
 
-- **Add a new RPC method** → Define in `src/shared/types.ts` (`DocumentRPC`), implement in `src/bun/index.ts`, call via `useRpc()` in `src/mainview/electroview.tsx`.
-- **Change document/collection shape** → `src/shared/types.ts` and `src/bun/index.ts` (schema + statements).
+- **Add a new RPC method** → 1. Add to `src/shared/rpc-types.ts` (`RpcMethods`). 2. Add to `src/shared/types.ts` (`DocumentRPC`). 3. Implement in `src/db/index.ts`. 4. Wire in `src/bun/index.ts` (Electrobun). 5. Create route in `src/server/routes/xrpc/` (web). 6. Add to `src/mainview/rpc/electrobun-rpc.ts` and `web-rpc.ts`.
+- **Change document/collection shape** → `src/shared/types.ts`, `src/db/schema.ts` (DDL + migrations), `src/db/index.ts` (statements).
 - **Change editor behavior or blocks** → `src/mainview/components/editor/DocumentEditor.tsx` and BlockNote APIs.
 - **Change global colors or theme** → `src/mainview/index.css` (CSS vars), `src/mainview/theme.ts` (Base UI), `src/mainview/themeContext.tsx` (theme state).
 - **Change sidebar structure or drag-drop** → `src/mainview/components/documents/` (DocumentSidebar, documentTree, DocumentList, etc.).
 - **Add/modify lexicons** → Edit JSON in `src/lexicons/org/blocknote/`, run `bun run generate:lexicons`.
 - **BlockNote ↔ ATProto serialization** → `src/shared/atproto/serialize.ts`.
+- **Run web dev server** → `bun run dev:web` (Vite + Nitro on port 3001).
+- **Run desktop dev** → `bun run dev` (Vite HMR on 5173 + Electrobun).
