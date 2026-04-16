@@ -1,6 +1,12 @@
 import { useState, useRef, useEffect } from "react";
 import type { SettingsInfo } from "../../../shared/types";
-import { StatefulPopover } from "baseui/popover";
+import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+} from "@/components/ui/dropdown-menu";
 
 type SidebarHeaderProps = {
   settings: SettingsInfo | null;
@@ -62,21 +68,7 @@ export function SidebarHeader({
   const [nameDraft, setNameDraft] = useState("");
   const nameInputRef = useRef<HTMLInputElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-
-  const sidebarPopoverOverrides = {
-    Body: {
-      style: {
-        borderRadius: "8px",
-        boxShadow: "0 4px 12px rgba(0,0,0,0.4)",
-        backgroundColor: "var(--color-surface)",
-        border: "1px solid var(--color-border)",
-        minWidth: "180px",
-        maxHeight: "224px",
-        overflow: "auto",
-      },
-    },
-    Inner: { style: {} },
-  };
+  const [switcherOpen, setSwitcherOpen] = useState(false);
 
   const dbName = !settings
     ? "Database"
@@ -121,7 +113,7 @@ export function SidebarHeader({
         <button
           type="button"
           onClick={handleLogoClick}
-          className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-surface-hover text-text-muted hover:bg-[var(--color-border)] hover:text-[var(--color-text)]"
+          className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-accent text-muted-foreground hover:bg-input hover:text-foreground"
           title="Upload database image"
           aria-label="Upload database image"
         >
@@ -153,7 +145,7 @@ export function SidebarHeader({
           tabIndex={-1}
         />
 
-        {/* Database name + switcher (popover portalled so it can overflow sidebar) */}
+        {/* Database name + switcher */}
         <div className="min-w-0 flex-1">
           {editingName ? (
             <input
@@ -169,16 +161,33 @@ export function SidebarHeader({
                   setEditingName(false);
                 }
               }}
-              className="min-w-0 w-full rounded bg-[var(--color-bg)] px-2 py-1 text-sm font-medium text-[var(--color-text)] outline-none ring-1 ring-border focus:ring-accent"
+              className="min-w-0 w-full rounded bg-background px-2 py-1 text-sm font-medium text-foreground outline-none ring-1 ring-border focus:ring-ring"
               aria-label="Database name"
             />
           ) : (
-            <StatefulPopover
-              placement="bottomLeft"
-              content={({ close }) => (
+            <Popover open={switcherOpen} onOpenChange={setSwitcherOpen}>
+              <PopoverTrigger
+                render={
+                  <button
+                    type="button"
+                    className="flex min-w-0 flex-1 items-center gap-1 rounded px-2 py-1.5 text-left text-sm font-medium text-foreground hover:bg-accent w-full"
+                    title={settings?.dbPath}
+                    aria-haspopup="listbox"
+                  />
+                }
+              >
+                <span className="min-w-0 flex-1 truncate">{dbName}</span>
+                <ChevronDownIcon className="shrink-0 text-muted-foreground" />
+              </PopoverTrigger>
+              <PopoverContent
+                align="start"
+                className="w-auto min-w-[180px] max-h-56 overflow-auto p-0"
+              >
                 <div className="py-1" role="listbox">
                   {recent.length === 0 ? (
-                    <div className="px-3 py-2 text-sm text-text-muted">No recent databases</div>
+                    <div className="px-3 py-2 text-sm text-muted-foreground">
+                      No recent databases
+                    </div>
                   ) : (
                     recent.map(({ directory, name }) => (
                       <button
@@ -186,10 +195,10 @@ export function SidebarHeader({
                         type="button"
                         role="option"
                         aria-selected={directory === settings?.dbDirectory}
-                        className={`flex w-full items-center gap-2 truncate px-3 py-2 text-left text-sm ${directory === settings?.dbDirectory ? "bg-accent-muted text-accent-text" : "text-[var(--color-text)] hover:bg-surface-hover"}`}
+                        className={`flex w-full items-center gap-2 truncate px-3 py-2 text-left text-sm ${directory === settings?.dbDirectory ? "bg-primary/20 text-primary-foreground" : "text-foreground hover:bg-accent"}`}
                         onClick={() => {
                           if (directory !== settings?.dbDirectory) void onSwitchDatabase(directory);
-                          close();
+                          setSwitcherOpen(false);
                         }}
                       >
                         <span className="min-w-0 truncate">{name}</span>
@@ -198,75 +207,44 @@ export function SidebarHeader({
                   )}
                   <button
                     type="button"
-                    className="w-full px-3 py-2 text-left text-sm text-text-muted hover:bg-surface-hover hover:text-[var(--color-text)]"
+                    className="w-full px-3 py-2 text-left text-sm text-muted-foreground hover:bg-accent hover:text-foreground"
                     onClick={() => {
                       startEditingName();
-                      close();
+                      setSwitcherOpen(false);
                     }}
                   >
                     Rename current database
                   </button>
                 </div>
-              )}
-              overrides={sidebarPopoverOverrides}
-            >
-              <button
-                type="button"
-                className="flex min-w-0 flex-1 items-center gap-1 rounded px-2 py-1.5 text-left text-sm font-medium text-[var(--color-text)] hover:bg-surface-hover w-full"
-                title={settings?.dbPath}
-                aria-haspopup="listbox"
-              >
-                <span className="min-w-0 flex-1 truncate">{dbName}</span>
-                <ChevronDownIcon className="shrink-0 text-text-muted" />
-              </button>
-            </StatefulPopover>
+              </PopoverContent>
+            </Popover>
           )}
         </div>
 
-        {/* Plus menu (popover portalled so it can overflow sidebar) */}
-        <StatefulPopover
-          placement="bottomRight"
-          content={({ close }) => (
-            <div className="min-w-[160px] py-1" role="menu">
-              {onCreatePage && (
-                <button
-                  type="button"
-                  role="menuitem"
-                  className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-[var(--color-text)] hover:bg-surface-hover"
-                  onClick={() => {
-                    void onCreatePage();
-                    close();
-                  }}
-                >
-                  New page
-                </button>
-              )}
-              {onCreateCollection && (
-                <button
-                  type="button"
-                  role="menuitem"
-                  className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-[var(--color-text)] hover:bg-surface-hover"
-                  onClick={() => {
-                    void onCreateCollection();
-                    close();
-                  }}
-                >
-                  New collection
-                </button>
-              )}
-            </div>
-          )}
-          overrides={sidebarPopoverOverrides}
-        >
-          <button
-            type="button"
-            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-text-muted hover:bg-surface-hover hover:text-[var(--color-text)]"
-            aria-label="Create new"
-            aria-haspopup="menu"
+        {/* Plus menu */}
+        <DropdownMenu>
+          <DropdownMenuTrigger
+            render={
+              <button
+                type="button"
+                className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-muted-foreground hover:bg-accent hover:text-foreground"
+                aria-label="Create new"
+              />
+            }
           >
             <PlusIcon />
-          </button>
-        </StatefulPopover>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            {onCreatePage && (
+              <DropdownMenuItem onClick={() => void onCreatePage()}>New page</DropdownMenuItem>
+            )}
+            {onCreateCollection && (
+              <DropdownMenuItem onClick={() => void onCreateCollection()}>
+                New collection
+              </DropdownMenuItem>
+            )}
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
     </div>
   );

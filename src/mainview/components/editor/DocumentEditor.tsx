@@ -127,20 +127,22 @@ export function DocumentEditor({
 
   if (!editor) {
     return (
-      <div className="flex flex-1 items-center justify-center text-text-muted">Loading editor…</div>
+      <div className="flex flex-1 items-center justify-center text-muted-foreground">
+        Loading editor…
+      </div>
     );
   }
 
   return (
     <>
-      <div className="flex items-center justify-between bg-[var(--color-surface)]/70 px-6 py-2 text-xs text-[var(--color-text-muted)]">
+      <div className="sticky top-0 z-10 -mx-2 flex items-center justify-between rounded-t-xl border-b border-border bg-popover px-8 pt-3.5 pb-3.5 text-xs text-muted-foreground">
         <div className="flex flex-wrap items-center gap-1.5">
           {contextCollectionName && (
-            <span className="font-medium text-[var(--color-text)]">{contextCollectionName}</span>
+            <span className="font-medium text-foreground">{contextCollectionName}</span>
           )}
           {contextHierarchy && contextHierarchy.length > 0 && (
             <>
-              <span className="text-[var(--color-text-subtle)]">/</span>
+              <span className="text-muted-foreground">/</span>
               {contextHierarchy.map((item, index) => {
                 const isLastParent = index === contextHierarchy.length - 1;
                 const label = item.title?.trim() || "Untitled";
@@ -149,11 +151,11 @@ export function DocumentEditor({
                     <button
                       type="button"
                       onClick={() => onNavigateToDocument?.(item.id)}
-                      className="max-w-[160px] truncate text-[var(--color-text-muted)] hover:text-[var(--color-text)] hover:underline"
+                      className="max-w-[160px] truncate text-muted-foreground hover:text-foreground hover:underline"
                     >
                       {label}
                     </button>
-                    {!isLastParent && <span className="text-[var(--color-text-subtle)]">/</span>}
+                    {!isLastParent && <span className="text-muted-foreground">/</span>}
                   </span>
                 );
               })}

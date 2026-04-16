@@ -1,5 +1,10 @@
 import { useState } from "react";
-import { StatefulPopover } from "baseui/popover";
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+} from "@/components/ui/dropdown-menu";
 import type { PublishStatus } from "../../../shared/types";
 
 type PublishButtonProps = {
@@ -8,37 +13,6 @@ type PublishButtonProps = {
   onPublish: () => Promise<void>;
   onUnpublish: () => Promise<void>;
 };
-
-const popoverOverrides = {
-  Body: {
-    style: {
-      borderRadius: "8px",
-      boxShadow: "0 4px 12px rgba(0,0,0,0.4)",
-      backgroundColor: "var(--color-surface)",
-      border: "1px solid var(--color-border)",
-      minWidth: "140px",
-    },
-  },
-  Inner: { style: {} },
-};
-
-function DropdownMenu({ onUnpublish, close }: { onUnpublish: () => void; close: () => void }) {
-  return (
-    <div className="min-w-[140px] py-1" role="menu">
-      <button
-        type="button"
-        role="menuitem"
-        className="w-full px-3 py-2 text-left text-sm text-red-400 hover:bg-surface-hover"
-        onClick={() => {
-          close();
-          onUnpublish();
-        }}
-      >
-        Unpublish
-      </button>
-    </div>
-  );
-}
 
 export function PublishButton({
   publishStatus,
@@ -75,6 +49,30 @@ export function PublishButton({
     }
   };
 
+  const chevronDropdown = (
+    <DropdownMenu>
+      <DropdownMenuTrigger
+        render={
+          <button
+            type="button"
+            disabled={loading}
+            className="rounded-r-md border border-l-0 px-1.5 py-1 text-xs transition-colors disabled:opacity-50"
+            aria-label="More publish options"
+          />
+        }
+      >
+        <svg width="10" height="10" viewBox="0 0 10 10" fill="none" className="translate-y-px">
+          <path d="M2.5 4L5 6.5L7.5 4" stroke="currentColor" strokeWidth="1.5" />
+        </svg>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end">
+        <DropdownMenuItem className="text-destructive" onClick={() => void handleUnpublish()}>
+          Unpublish
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+
   // Not published
   if (!publishStatus?.published) {
     return (
@@ -92,7 +90,7 @@ export function PublishButton({
     );
   }
 
-  // Published but modified — split button: Update action + dropdown chevron
+  // Published but modified
   if (publishStatus.isModified) {
     return (
       <div className="flex items-center gap-2">
@@ -105,37 +103,16 @@ export function PublishButton({
           >
             {loading ? "Updating…" : "Update"}
           </button>
-          <StatefulPopover
-            placement="bottomRight"
-            content={({ close }) => (
-              <DropdownMenu onUnpublish={() => void handleUnpublish()} close={close} />
-            )}
-            overrides={popoverOverrides}
-          >
-            <button
-              type="button"
-              disabled={loading}
-              className="rounded-r-md border border-amber-700/60 bg-amber-600 px-1.5 py-1 text-xs text-white transition-colors hover:bg-amber-700 disabled:opacity-50"
-              aria-label="More publish options"
-            >
-              <svg
-                width="10"
-                height="10"
-                viewBox="0 0 10 10"
-                fill="none"
-                className="translate-y-px"
-              >
-                <path d="M2.5 4L5 6.5L7.5 4" stroke="currentColor" strokeWidth="1.5" />
-              </svg>
-            </button>
-          </StatefulPopover>
+          <div className="border-amber-700/60 text-white [&>div>button]:border-amber-700/60 [&>div>button]:bg-amber-600 [&>div>button]:text-white hover:[&>div>button]:bg-amber-700">
+            {chevronDropdown}
+          </div>
         </div>
         {error && <span className="text-xs text-red-400">{error}</span>}
       </div>
     );
   }
 
-  // Published and up to date — split button: Published badge + dropdown chevron
+  // Published and up to date
   return (
     <div className="flex items-center gap-2">
       <div className="flex items-stretch">
@@ -143,24 +120,9 @@ export function PublishButton({
           <span className="inline-block h-1.5 w-1.5 rounded-full bg-green-400" />
           Published
         </span>
-        <StatefulPopover
-          placement="bottomRight"
-          content={({ close }) => (
-            <DropdownMenu onUnpublish={() => void handleUnpublish()} close={close} />
-          )}
-          overrides={popoverOverrides}
-        >
-          <button
-            type="button"
-            disabled={loading}
-            className="rounded-r-md border border-green-700/50 bg-green-900/30 px-1.5 py-1 text-xs text-green-400 transition-colors hover:bg-green-900/50 disabled:opacity-50"
-            aria-label="More publish options"
-          >
-            <svg width="10" height="10" viewBox="0 0 10 10" fill="none" className="translate-y-px">
-              <path d="M2.5 4L5 6.5L7.5 4" stroke="currentColor" strokeWidth="1.5" />
-            </svg>
-          </button>
-        </StatefulPopover>
+        <div className="[&>div>button]:border-green-700/50 [&>div>button]:bg-green-900/30 [&>div>button]:text-green-400 hover:[&>div>button]:bg-green-900/50">
+          {chevronDropdown}
+        </div>
       </div>
       {error && <span className="text-xs text-red-400">{error}</span>}
     </div>

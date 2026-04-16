@@ -109,11 +109,11 @@ export function DocumentSidebar({
         />
       </div>
       {onOpenSettings && (
-        <div className="shrink-0 border-t border-[var(--color-border)] p-2">
+        <div className="shrink-0 border-t border-border p-2">
           <button
             type="button"
             onClick={onOpenSettings}
-            className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-[var(--color-text-muted)] hover:bg-[var(--color-surface-hover)] hover:text-[var(--color-text)]"
+            className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-muted-foreground hover:bg-accent hover:text-foreground"
             aria-label="Open settings"
           >
             <GearIcon className="shrink-0" />

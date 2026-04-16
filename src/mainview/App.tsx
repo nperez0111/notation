@@ -407,7 +407,7 @@ export default function App() {
   );
 
   return (
-    <div className="flex h-screen overflow-hidden bg-[var(--color-surface-elevated)] text-[var(--color-text)]">
+    <div className="flex h-screen overflow-hidden bg-popover text-foreground">
       <DocumentSidebar
         settings={settings}
         collections={collections}
@@ -439,31 +439,31 @@ export default function App() {
         blueskySession={blueskySession}
         onBlueskySessionChange={setBlueskySession}
       />
-      <main className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-[var(--color-surface)]">
+      <main className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-card">
         {loading ? (
-          <div className="flex flex-1 items-center justify-center p-6 text-text-muted">
+          <div className="flex flex-1 items-center justify-center p-6 text-muted-foreground">
             Loading…
           </div>
         ) : documents.length === 0 ? (
-          <div className="flex flex-1 flex-col items-center justify-center gap-4 p-6 text-text-muted">
+          <div className="flex flex-1 flex-col items-center justify-center gap-4 p-6 text-muted-foreground">
             <p>No notes yet.</p>
             <button
               type="button"
               onClick={() => {
                 if (collections[0]) void onCreateDocument(collections[0].id, null);
               }}
-              className="text-accent hover:underline"
+              className="text-primary hover:underline"
               disabled={collections.length === 0}
             >
               Create your first note
             </button>
           </div>
         ) : selectedId !== null && currentDoc === null ? (
-          <div className="flex flex-1 items-center justify-center p-6 text-text-muted">
+          <div className="flex flex-1 items-center justify-center p-6 text-muted-foreground">
             Loading…
           </div>
         ) : currentDoc ? (
-          <div className="pt-2 pr-2 pb-12 mb-2 mr-2 mt-2 pl-0 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-elevated)] overflow-auto">
+          <div className="h-screen pr-2 pb-12 mb-2 mr-2 mt-2 pl-0 rounded-xl border border-border bg-popover overflow-auto">
             <DocumentEditor
               key={currentDoc.id}
               documentId={currentDoc.id}
@@ -491,7 +491,7 @@ export default function App() {
             />
           </div>
         ) : (
-          <div className="flex flex-1 items-center justify-center p-6 text-text-muted">
+          <div className="flex flex-1 items-center justify-center p-6 text-muted-foreground">
             Select a note
           </div>
         )}
