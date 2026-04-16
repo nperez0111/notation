@@ -80,20 +80,14 @@ function ChildDocRow({
       data-child-doc-row
     >
       {dropIndicatorEdge === "top" && (
-        <div
-          className="absolute left-0 right-0 top-0 z-10 h-0.5 bg-[var(--color-accent)]"
-          aria-hidden
-        />
+        <div className="absolute left-0 right-0 top-0 z-10 h-0.5 bg-primary" aria-hidden />
       )}
       {dropIndicatorEdge === "bottom" && (
-        <div
-          className="absolute bottom-0 left-0 right-0 z-10 h-0.5 bg-[var(--color-accent)]"
-          aria-hidden
-        />
+        <div className="absolute bottom-0 left-0 right-0 z-10 h-0.5 bg-primary" aria-hidden />
       )}
       <div
         ref={handleRef}
-        className="flex shrink-0 cursor-grab touch-none items-center py-0.5 text-[var(--color-text-muted)] hover:text-[var(--color-text)] active:cursor-grabbing"
+        className="flex shrink-0 cursor-grab touch-none items-center py-0.5 text-muted-foreground hover:text-foreground active:cursor-grabbing"
         aria-label="Drag to reorder"
       >
         <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 24 24" aria-hidden>
@@ -103,7 +97,7 @@ function ChildDocRow({
       <button
         type="button"
         onClick={() => onNavigate(doc.id)}
-        className="flex min-w-0 flex-1 items-center gap-2 rounded-md px-2 py-1 text-left text-sm text-[var(--color-text)] hover:bg-[var(--color-surface-hover)]"
+        className="flex min-w-0 flex-1 items-center gap-2 rounded-md px-2 py-1 text-left text-sm text-foreground hover:bg-accent"
       >
         <DocumentIconView icon={doc.icon} size={16} className="shrink-0" />
         <span className="min-w-0 truncate">{title}</span>
@@ -123,10 +117,8 @@ export function ChildDocumentsSection({ docs, onNavigate, onReorder }: ChildDocu
   if (docs.length === 0) return null;
 
   return (
-    <div className="border-b border-[var(--color-border)]/60 pb-3">
-      <div className="mb-1.5 px-6 text-xs font-medium text-[var(--color-text-muted)]">
-        Child documents
-      </div>
+    <div className="border-b border-border/60 pb-3">
+      <div className="mb-1.5 px-6 text-xs font-medium text-muted-foreground">Child documents</div>
       <ul className="list-none px-6" role="list">
         {docs.map((doc, index) => (
           <li key={doc.id}>

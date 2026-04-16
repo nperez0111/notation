@@ -86,7 +86,7 @@ export function DocumentIconPicker({
       <button
         ref={refs.setReference}
         type="button"
-        className="flex items-center justify-center rounded p-1 text-text-muted hover:bg-surface-hover hover:text-[var(--color-text)]"
+        className="flex items-center justify-center rounded p-1 text-muted-foreground hover:bg-accent hover:text-foreground"
         aria-label="Change document icon"
         aria-expanded={open}
         aria-haspopup="true"
@@ -102,7 +102,7 @@ export function DocumentIconPicker({
               ...floatingStyles,
               ...(floatingWidth != null ? { width: `${floatingWidth}px` } : {}),
             }}
-            className="z-[100] min-w-0 rounded-lg border border-border bg-surface shadow-lg"
+            className="z-[100] min-w-0 rounded-lg border border-border bg-card shadow-lg"
             role="dialog"
             aria-label="Document icon picker"
             {...getFloatingProps()}

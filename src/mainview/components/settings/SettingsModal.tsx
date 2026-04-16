@@ -1,7 +1,13 @@
 import { useState, useEffect } from "react";
-import { Modal } from "baseui/modal";
-import { Select } from "baseui/select";
-import { Button } from "baseui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Button } from "@/components/ui/button";
 import { useRpc } from "../../electroview";
 import type { ThemeOption } from "../../themeContext";
 import type { BlueskySession, SettingsInfo } from "../../../shared/types";
@@ -111,202 +117,166 @@ export function SettingsModal({
   };
 
   return (
-    <Modal
-      isOpen={isOpen}
-      onClose={onClose}
-      closeable
-      animate
-      size="default"
-      overrides={{
-        Root: {
-          style: {
-            zIndex: 10000,
-          },
-        },
-        DialogContainer: {
-          style: {
-            backgroundColor: "rgba(0, 0, 0, 0.6)",
-          },
-        },
-        Dialog: {
-          style: {
-            maxWidth: "540px",
-            width: "100%",
-            borderRadius: "var(--radius)",
-            backgroundColor: "var(--color-surface-elevated)",
-            boxShadow: "0 24px 60px rgba(0, 0, 0, 0.8)",
-          },
-        },
+    <Dialog
+      open={isOpen}
+      onOpenChange={(open) => {
+        if (!open) onClose();
       }}
     >
-      <div className="flex flex-col gap-7 p-5">
-        <h2 className="text-xl font-semibold text-[var(--color-text)]">Settings</h2>
-
-        {/* Database location */}
-        <section className="flex flex-col gap-3">
-          <h3 className="text-[13px] font-semibold uppercase tracking-wide text-[var(--color-text-muted)]">
-            Database location
-          </h3>
-          {settings && (
-            <>
-              <p
-                className="truncate rounded bg-[var(--color-surface)] px-3 py-2 font-mono text-sm text-[var(--color-text-subtle)]"
-                title={settings.dbPath}
-              >
-                {settings.dbPath}
-              </p>
-              {pendingPath ? (
-                <div className="flex flex-col gap-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] p-3">
-                  <p className="text-sm text-[var(--color-text)]">
-                    You have {settings.documentCount} document
-                    {settings.documentCount !== 1 ? "s" : ""}. How do you want to use the new
-                    location?
-                  </p>
-                  <div className="flex gap-2">
-                    <Button
-                      size="compact"
-                      onClick={() => handleConfirmMove("move")}
-                      disabled={changingLocation}
-                    >
-                      Move existing database
-                    </Button>
-                    <Button
-                      size="compact"
-                      kind="secondary"
-                      onClick={() => handleConfirmMove("new")}
-                      disabled={changingLocation}
-                    >
-                      Create new database
-                    </Button>
-                    <Button
-                      size="compact"
-                      kind="tertiary"
-                      onClick={() => setPendingPath(null)}
-                      disabled={changingLocation}
-                    >
-                      Cancel
-                    </Button>
+      <DialogContent className="max-w-[540px]">
+        <DialogHeader>
+          <DialogTitle>Settings</DialogTitle>
+        </DialogHeader>
+        <div className="flex flex-col gap-7">
+          {/* Database location */}
+          <section className="flex flex-col gap-3">
+            <h3 className="text-[13px] font-semibold uppercase tracking-wide text-muted-foreground">
+              Database location
+            </h3>
+            {settings && (
+              <>
+                <p
+                  className="truncate rounded bg-card px-3 py-2 font-mono text-sm text-muted-foreground"
+                  title={settings.dbPath}
+                >
+                  {settings.dbPath}
+                </p>
+                {pendingPath ? (
+                  <div className="flex flex-col gap-2 rounded-lg border border-border bg-card p-3">
+                    <p className="text-sm text-foreground">
+                      You have {settings.documentCount} document
+                      {settings.documentCount !== 1 ? "s" : ""}. How do you want to use the new
+                      location?
+                    </p>
+                    <div className="flex gap-2">
+                      <Button
+                        size="sm"
+                        onClick={() => handleConfirmMove("move")}
+                        disabled={changingLocation}
+                      >
+                        Move existing database
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="secondary"
+                        onClick={() => handleConfirmMove("new")}
+                        disabled={changingLocation}
+                      >
+                        Create new database
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => setPendingPath(null)}
+                        disabled={changingLocation}
+                      >
+                        Cancel
+                      </Button>
+                    </div>
                   </div>
+                ) : (
+                  <Button
+                    size="sm"
+                    onClick={() => void handleChangeLocation()}
+                    disabled={changingLocation}
+                  >
+                    Change location…
+                  </Button>
+                )}
+              </>
+            )}
+          </section>
+
+          <hr className="border-border" />
+
+          {/* Bluesky */}
+          <section className="flex flex-col gap-3">
+            <h3 className="text-[13px] font-semibold uppercase tracking-wide text-muted-foreground">
+              Bluesky
+            </h3>
+            {blueskySession ? (
+              <div className="flex items-center justify-between rounded-lg border border-border bg-card p-3">
+                <div className="flex flex-col gap-0.5">
+                  <span className="text-sm font-medium text-foreground">
+                    @{blueskySession.handle}
+                  </span>
+                  <span className="text-xs text-muted-foreground">Connected</span>
                 </div>
-              ) : (
-                <Button size="compact" onClick={handleChangeLocation} disabled={changingLocation}>
-                  Change location…
-                </Button>
-              )}
-            </>
-          )}
-        </section>
-
-        <hr className="border-[var(--color-border)]" />
-
-        {/* Bluesky */}
-        <section className="flex flex-col gap-3">
-          <h3 className="text-[13px] font-semibold uppercase tracking-wide text-[var(--color-text-muted)]">
-            Bluesky
-          </h3>
-          {blueskySession ? (
-            <div className="flex items-center justify-between rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] p-3">
-              <div className="flex flex-col gap-0.5">
-                <span className="text-sm font-medium text-[var(--color-text)]">
-                  @{blueskySession.handle}
-                </span>
-                <span className="text-xs text-[var(--color-text-subtle)]">Connected</span>
-              </div>
-              <Button
-                size="compact"
-                kind="secondary"
-                onClick={() => void handleBlueskyLogout()}
-                disabled={bskyLoading}
-              >
-                Disconnect
-              </Button>
-            </div>
-          ) : (
-            <div className="flex flex-col gap-2">
-              <input
-                type="text"
-                placeholder="your-handle.bsky.social"
-                value={bskyHandle}
-                onChange={(e) => setBskyHandle(e.target.value)}
-                className="rounded-md border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-sm text-[var(--color-text)] placeholder:text-[var(--color-text-subtle)] focus:border-blue-500 focus:outline-none"
-              />
-              <input
-                type="password"
-                placeholder="xxxx-xxxx-xxxx-xxxx"
-                value={bskyAppPassword}
-                onChange={(e) => setBskyAppPassword(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") void handleBlueskyLogin();
-                }}
-                className="rounded-md border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-sm text-[var(--color-text)] placeholder:text-[var(--color-text-subtle)] focus:border-blue-500 focus:outline-none"
-              />
-              <div className="flex items-center gap-2">
                 <Button
-                  size="compact"
-                  onClick={() => void handleBlueskyLogin()}
-                  disabled={bskyLoading || !bskyHandle.trim() || !bskyAppPassword.trim()}
+                  size="sm"
+                  variant="secondary"
+                  onClick={() => void handleBlueskyLogout()}
+                  disabled={bskyLoading}
                 >
-                  {bskyLoading ? "Connecting…" : "Connect"}
+                  Disconnect
                 </Button>
-                <button
-                  type="button"
-                  onClick={() =>
-                    void rpc.openExternal({ url: "https://bsky.app/settings/app-passwords" })
-                  }
-                  className="text-xs text-blue-400 hover:underline"
-                >
-                  Create an app password
-                </button>
               </div>
-              {bskyError && <p className="text-xs text-red-400">{bskyError}</p>}
-            </div>
-          )}
-        </section>
+            ) : (
+              <div className="flex flex-col gap-2">
+                <input
+                  aria-label="Bluesky handle"
+                  type="text"
+                  placeholder="your-handle.bsky.social"
+                  value={bskyHandle}
+                  onChange={(e) => setBskyHandle(e.target.value)}
+                  className="rounded-md border border-border bg-card px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:border-ring focus:outline-none"
+                />
+                <input
+                  aria-label="Bluesky app password"
+                  type="password"
+                  placeholder="xxxx-xxxx-xxxx-xxxx"
+                  value={bskyAppPassword}
+                  onChange={(e) => setBskyAppPassword(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") void handleBlueskyLogin();
+                  }}
+                  className="rounded-md border border-border bg-card px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:border-ring focus:outline-none"
+                />
+                <div className="flex items-center gap-2">
+                  <Button
+                    size="sm"
+                    onClick={() => void handleBlueskyLogin()}
+                    disabled={bskyLoading || !bskyHandle.trim() || !bskyAppPassword.trim()}
+                  >
+                    {bskyLoading ? "Connecting…" : "Connect"}
+                  </Button>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      void rpc.openExternal({ url: "https://bsky.app/settings/app-passwords" })
+                    }
+                    className="text-xs text-blue-400 hover:underline"
+                  >
+                    Create an app password
+                  </button>
+                </div>
+                {bskyError && <p className="text-xs text-red-400">{bskyError}</p>}
+              </div>
+            )}
+          </section>
 
-        <hr className="border-[var(--color-border)]" />
+          <hr className="border-border" />
 
-        {/* Theme */}
-        <section className="flex flex-col gap-3">
-          <h3 className="text-[13px] font-semibold uppercase tracking-wide text-[var(--color-text-muted)]">
-            Theme
-          </h3>
-          <Select
-            options={THEME_OPTIONS}
-            value={[
-              { id: theme, label: THEME_OPTIONS.find((o) => o.id === theme)?.label ?? theme },
-            ]}
-            onChange={({ value }) => {
-              const option = value[0];
-              if (option && "id" in option) {
-                onThemeChange(option.id as ThemeOption);
-              }
-            }}
-            labelKey="label"
-            valueKey="id"
-            searchable={false}
-            clearable={false}
-            overrides={{
-              ControlContainer: {
-                style: {
-                  backgroundColor: "var(--color-surface)",
-                  borderColor: "var(--color-border)",
-                },
-              },
-              Popover: {
-                props: {
-                  overrides: {
-                    Body: {
-                      style: {
-                        zIndex: 10001,
-                      },
-                    },
-                  },
-                },
-              },
-            }}
-          />
-        </section>
-      </div>
-    </Modal>
+          {/* Theme */}
+          <section className="flex flex-col gap-3">
+            <h3 className="text-[13px] font-semibold uppercase tracking-wide text-muted-foreground">
+              Theme
+            </h3>
+            <Select value={theme} onValueChange={(v) => onThemeChange(v as ThemeOption)}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {THEME_OPTIONS.map((opt) => (
+                  <SelectItem key={opt.id} value={opt.id}>
+                    {opt.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </section>
+        </div>
+      </DialogContent>
+    </Dialog>
   );
 }

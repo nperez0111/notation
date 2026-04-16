@@ -30,7 +30,7 @@ export function EmojiMartPickerPanel({
   if (!ready) {
     return (
       <div
-        className="flex h-[320px] min-w-0 w-full items-center justify-center text-text-subtle"
+        className="flex h-[320px] min-w-0 w-full items-center justify-center text-muted-foreground"
         role="presentation"
         onClick={(e) => e.stopPropagation()}
         onKeyDown={(e) => e.stopPropagation()}

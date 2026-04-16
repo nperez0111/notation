@@ -1,6 +1,4 @@
 import { useState, useEffect, useMemo, createContext, useContext } from "react";
-import { BaseProvider } from "baseui";
-import { appDarkTheme, appLightTheme } from "./theme";
 
 const THEME_STORAGE_KEY = "note-taker-theme";
 
@@ -59,12 +57,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     } catch {}
   };
 
-  const themeObject = resolved === "light" ? appLightTheme : appDarkTheme;
   const value = useMemo(() => ({ theme, setTheme, resolved }), [theme, resolved]);
 
-  return (
-    <ThemeContext.Provider value={value}>
-      <BaseProvider theme={themeObject}>{children}</BaseProvider>
-    </ThemeContext.Provider>
-  );
+  return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>;
 }

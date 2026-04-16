@@ -1,89 +1,138 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
 
-/* ---------------------------------------------------------------------------
-   Theme: dark mode by default. Swap these for light mode or add a theme toggle.
-   --------------------------------------------------------------------------- */
-:root,
-[data-theme="dark"] {
-  /* Surfaces */
-  --color-bg: #0f0f0f;
-  --color-surface: #1a1a1a;
-  --color-surface-elevated: #242424;
-  --color-surface-hover: #2a2a2a;
-  --color-surface-active: #333333;
+@variant dark (&:is(.dark, [data-theme="dark"] *));
 
-  /* Text */
-  --color-text: #f0f0f0;
-  --color-text-muted: #a0a0a0;
-  --color-text-subtle: #6b6b6b;
-
-  /* Borders */
-  --color-border: #2e2e2e;
-  --color-border-strong: #404040;
-
-  /* Accent (actions, selection) */
-  --color-accent: #6366f1;
-  --color-accent-hover: #818cf8;
-  --color-accent-muted: rgba(99, 102, 241, 0.2);
-  --color-accent-text: #e0e7ff;
-
-  /* Drag-drop: drop-onto target (parent = row, child = nested rows) */
-  --color-drop-target-parent: rgba(99, 102, 241, 0.28);
-  --color-drop-target-child: rgba(99, 102, 241, 0.12);
-
-  /* Semantic */
-  --color-success: #22c55e;
-  --color-danger: #ef4444;
-
-  /* Typography */
-  --font-sans:
-    "Inter", "SF Pro Display", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  --radius: 6px;
-  --radius-sm: 4px;
-}
-
-[data-theme="light"] {
-  --color-bg: #fafafa;
-  --color-surface: #ffffff;
-  --color-surface-elevated: #f5f5f5;
-  --color-surface-hover: #eeeeee;
-  --color-surface-active: #e0e0e0;
-
-  --color-text: #171717;
-  --color-text-muted: #525252;
-  --color-text-subtle: #737373;
-
-  --color-border: #e5e5e5;
-  --color-border-strong: #d4d4d4;
-
-  --color-accent: #6366f1;
-  --color-accent-hover: #4f46e5;
-  --color-accent-muted: rgba(99, 102, 241, 0.15);
-  --color-accent-text: #312e81;
-
-  --color-drop-target-parent: rgba(99, 102, 241, 0.22);
-  --color-drop-target-child: rgba(99, 102, 241, 0.1);
-
-  --color-success: #16a34a;
-  --color-danger: #dc2626;
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --radius-sm: calc(var(--radius) - 2px);
+  --radius-md: var(--radius);
+  --radius-lg: calc(var(--radius) + 2px);
+  --radius-xl: calc(var(--radius) + 4px);
+  --font-sans: var(--font-sans);
+  --font-heading: var(--font-heading);
 }
 
 @layer base {
+  :root {
+    --background: oklch(0.985 0 0);
+    --foreground: oklch(0.205 0 0);
+    --card: oklch(1 0 0);
+    --card-foreground: oklch(0.205 0 0);
+    --popover: oklch(1 0 0);
+    --popover-foreground: oklch(0.205 0 0);
+    --primary: oklch(0.585 0.204 277.12);
+    --primary-foreground: oklch(1 0 0);
+    --secondary: oklch(0.949 0 0);
+    --secondary-foreground: oklch(0.205 0 0);
+    --muted: oklch(0.97 0 0);
+    --muted-foreground: oklch(0.439 0 0);
+    --accent: oklch(0.949 0 0);
+    --accent-foreground: oklch(0.205 0 0);
+    --destructive: oklch(0.577 0.215 27.317);
+    --destructive-foreground: oklch(1 0 0);
+    --border: oklch(0.922 0 0);
+    --input: oklch(0.87 0 0);
+    --ring: oklch(0.585 0.204 277.12);
+    --chart-1: oklch(0.87 0 0);
+    --chart-2: oklch(0.556 0 0);
+    --chart-3: oklch(0.439 0 0);
+    --chart-4: oklch(0.371 0 0);
+    --chart-5: oklch(0.269 0 0);
+    --radius: 0.375rem;
+    --sidebar: oklch(0.985 0 0);
+    --sidebar-foreground: oklch(0.205 0 0);
+    --sidebar-primary: oklch(0.585 0.204 277.12);
+    --sidebar-primary-foreground: oklch(1 0 0);
+    --sidebar-accent: oklch(0.949 0 0);
+    --sidebar-accent-foreground: oklch(0.205 0 0);
+    --sidebar-border: oklch(0.922 0 0);
+    --sidebar-ring: oklch(0.585 0.204 277.12);
+    --font-heading: var(--font-sans);
+    --font-sans:
+      "Inter", "SF Pro Display", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  }
+  .dark,
+  [data-theme="dark"] {
+    --background: oklch(0.168 0 0);
+    --foreground: oklch(0.955 0 0);
+    --card: oklch(0.218 0 0);
+    --card-foreground: oklch(0.955 0 0);
+    --popover: oklch(0.26 0 0);
+    --popover-foreground: oklch(0.955 0 0);
+    --primary: oklch(0.585 0.204 277.12);
+    --primary-foreground: oklch(0.93 0.034 272.769);
+    --secondary: oklch(0.285 0 0);
+    --secondary-foreground: oklch(0.955 0 0);
+    --muted: oklch(0.26 0 0);
+    --muted-foreground: oklch(0.706 0 0);
+    --accent: oklch(0.285 0 0);
+    --accent-foreground: oklch(0.955 0 0);
+    --destructive: oklch(0.637 0.208 25.322);
+    --destructive-foreground: oklch(1 0 0);
+    --border: oklch(0.301 0 0);
+    --input: oklch(0.371 0 0);
+    --ring: oklch(0.585 0.204 277.12);
+    --chart-1: oklch(0.87 0 0);
+    --chart-2: oklch(0.556 0 0);
+    --chart-3: oklch(0.439 0 0);
+    --chart-4: oklch(0.371 0 0);
+    --chart-5: oklch(0.269 0 0);
+    --sidebar: oklch(0.218 0 0);
+    --sidebar-foreground: oklch(0.955 0 0);
+    --sidebar-primary: oklch(0.585 0.204 277.12);
+    --sidebar-primary-foreground: oklch(0.955 0 0);
+    --sidebar-accent: oklch(0.285 0 0);
+    --sidebar-accent-foreground: oklch(0.955 0 0);
+    --sidebar-border: oklch(0.301 0 0);
+    --sidebar-ring: oklch(0.585 0.204 277.12);
+  }
+  * {
+    @apply border-border outline-ring/50;
+  }
+  html {
+    @apply font-sans;
+  }
   body {
-    @apply antialiased;
-    background-color: var(--color-bg);
-    color: var(--color-text);
-    font-family: var(--font-sans);
+    @apply bg-background text-foreground antialiased;
   }
-
   a {
-    color: var(--color-accent);
+    @apply text-primary;
   }
-
   a:hover {
-    color: var(--color-accent-hover);
+    @apply text-primary/80;
   }
 }
 
@@ -91,36 +140,36 @@
    See https://www.blocknotejs.org/docs/react/styling-theming/themes */
 .bn-container[data-color-scheme="dark"],
 .bn-container[data-color-scheme="light"] {
-  --bn-colors-editor-text: var(--color-text);
-  --bn-colors-editor-background: var(--color-surface-elevated);
-  --bn-colors-menu-text: var(--color-text);
-  --bn-colors-menu-background: var(--color-surface-elevated);
-  --bn-colors-tooltip-text: var(--color-text);
-  --bn-colors-tooltip-background: var(--color-surface-elevated);
-  --bn-colors-hovered-text: var(--color-text);
-  --bn-colors-hovered-background: var(--color-surface-hover);
-  --bn-colors-selected-text: var(--color-accent-text);
-  --bn-colors-selected-background: var(--color-accent);
-  --bn-colors-disabled-text: var(--color-text-subtle);
-  --bn-colors-disabled-background: var(--color-surface);
-  --bn-colors-shadow: var(--color-border-strong);
-  --bn-colors-border: var(--color-border);
-  --bn-colors-side-menu: var(--color-text-subtle);
+  --bn-colors-editor-text: var(--foreground);
+  --bn-colors-editor-background: var(--popover);
+  --bn-colors-menu-text: var(--foreground);
+  --bn-colors-menu-background: var(--popover);
+  --bn-colors-tooltip-text: var(--foreground);
+  --bn-colors-tooltip-background: var(--popover);
+  --bn-colors-hovered-text: var(--foreground);
+  --bn-colors-hovered-background: var(--accent);
+  --bn-colors-selected-text: var(--primary-foreground);
+  --bn-colors-selected-background: var(--primary);
+  --bn-colors-disabled-text: var(--muted-foreground);
+  --bn-colors-disabled-background: var(--card);
+  --bn-colors-shadow: var(--input);
+  --bn-colors-border: var(--border);
+  --bn-colors-side-menu: var(--muted-foreground);
   --bn-font-family: var(--font-sans);
   --bn-border-radius: var(--radius);
 }
 
 /* Force .bn-editor background to match pane (overrides BlockNote default) */
 .bn-editor {
-  background-color: var(--color-surface-elevated) !important;
+  background-color: var(--popover) !important;
 }
 
 /* Notion-like properties section */
 .properties-section [data-notion-row]:hover {
-  background-color: rgba(255, 255, 255, 0.02);
+  background-color: oklch(1 0 0 / 2%);
 }
 .properties-section input::placeholder {
-  color: var(--color-text-subtle);
+  color: var(--muted-foreground);
 }
 .properties-section input[type="date"],
 .properties-section input[type="time"],
@@ -128,23 +177,11 @@
   color-scheme: dark;
 }
 
-/* Theme applied on root so portaled content (Base Web, etc.) inherits */
+/* Theme applied on root so portaled content inherits */
 html[data-theme="light"] {
   color-scheme: light;
 }
 html[data-theme="dark"],
 html:not([data-theme]) {
   color-scheme: dark;
-}
-
-/* Menu items in portaled popovers: hover must work in shadow/portal context */
-.properties-menu-item:hover,
-.properties-submenu-item:hover {
-  background-color: var(--color-surface-hover) !important;
-}
-.properties-menu-item {
-  background-color: transparent;
-}
-.properties-submenu-item {
-  background-color: transparent;
 }

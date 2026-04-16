@@ -11,7 +11,7 @@ Use this file as a table of contents: **keywords → files**. Read the listed fi
 - **[Electrobun](https://blackboard.sh/electrobun/llms.txt)** — desktop shell (Bun main process + webview), not Electron.
 - **[ATProto](https://atproto.com/docs)** — decentralized protocol for identity and data sync.
 - **[BlockNote](https://www.blocknotejs.org/llms.txt)** — block-based rich text editor.
-- **Base UI** — component library for modals, pickers, etc. (with Styletron).
+- **Base UI** — component library for modals, pickers, etc.
 - **CSS variables** — theming (light/dark) in `index.css`; Base UI themes in `theme.ts`.
 
 ---
@@ -22,7 +22,7 @@ Use this file as a table of contents: **keywords → files**. Read the listed fi
 | ------------------------------------------- | ----------------------- | ---------------------------------------------------------------------------------- |
 | **Electrobun config**, build, views         | `electrobun.config.ts`  | App name, build copy (dist → views/mainview), watch ignore.                        |
 | **Main process**, Bun, window, DB bootstrap | `src/bun/index.ts`      | BrowserWindow, RPC handlers, SQLite, settings.json, `views://mainview/index.html`. |
-| **Frontend entry**, React root, providers   | `src/mainview/main.tsx` | Styletron, ThemeProvider, RpcProvider, App.                                        |
+| **Frontend entry**, React root, providers   | `src/mainview/main.tsx` | ThemeProvider, RpcProvider, App.                                                   |
 | **Vite**                                    | `vite.config.ts`        | Bundling for mainview.                                                             |
 | **Tailwind**                                | `tailwind.config.js`    | PostCSS in `postcss.config.js`.                                                    |
 

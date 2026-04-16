@@ -4,7 +4,12 @@ import {
   dropTargetForElements,
 } from "@atlaskit/pragmatic-drag-and-drop/element/adapter";
 import type { Collection, Document } from "../../../shared/types";
-import { StatefulPopover } from "baseui/popover";
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+} from "@/components/ui/dropdown-menu";
 import { DocumentListItem } from "./DocumentListItem";
 import {
   buildDocumentTree,
@@ -109,7 +114,7 @@ function SidebarDropStrip({
     <div ref={ref} className="relative min-h-px shrink-0">
       {showLineIndicator && isActive && (
         <div
-          className="absolute left-0 right-0 z-10 h-0.5 bg-[var(--color-accent)]"
+          className="absolute left-0 right-0 z-10 h-0.5 bg-primary"
           style={{
             ...(edge === "bottom" ? { bottom: 0, top: "auto" } : { top: 0 }),
             ...(indent > 0 ? { left: indent * DEPTH_PADDING } : {}),
@@ -328,19 +333,6 @@ export function CollectionSection({
   const [activeDrop, setActiveDrop] = useState<DropData | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const sidebarPopoverOverrides = {
-    Body: {
-      style: {
-        borderRadius: "8px",
-        boxShadow: "0 4px 12px rgba(0,0,0,0.4)",
-        backgroundColor: "var(--color-surface)",
-        border: "1px solid var(--color-border)",
-        minWidth: "120px",
-      },
-    },
-    Inner: { style: {} },
-  };
-
   const byParent = buildDocumentTree(documents, collection.id);
   const roots = getRootDocuments(byParent);
 
@@ -367,11 +359,11 @@ export function CollectionSection({
 
   return (
     <section className="border-b border-border/60 last:border-b-0">
-      <div className="flex w-full items-center gap-1 rounded-md px-2.5 py-1.5 text-xs font-semibold tracking-wide text-text-subtle">
+      <div className="flex w-full items-center gap-1 rounded-md px-2.5 py-1.5 text-xs font-semibold tracking-wide text-muted-foreground">
         <button
           type="button"
           onClick={() => setExpanded((e) => !e)}
-          className="group flex min-w-0 flex-1 items-center gap-1.5 rounded px-1.5 py-0.5 text-left hover:bg-surface-hover"
+          className="group flex min-w-0 flex-1 items-center gap-1.5 rounded px-1.5 py-0.5 text-left hover:bg-accent"
           aria-expanded={expanded}
         >
           {editingName ? (
@@ -388,14 +380,14 @@ export function CollectionSection({
                   setEditingName(false);
                 }
               }}
-              className="min-w-0 flex-1 rounded bg-[var(--color-bg)] px-1.5 py-0.5 text-inherit outline-none ring-1 ring-border focus:ring-accent"
+              className="min-w-0 flex-1 rounded bg-background px-1.5 py-0.5 text-inherit outline-none ring-1 ring-border focus:ring-ring"
               aria-label="Rename collection"
             />
           ) : (
             <span className="min-w-0 flex-1 truncate uppercase">{collection.name}</span>
           )}
           <span
-            className={`ml-1 inline-block shrink-0 text-[0.65rem] text-text-subtle transition-transform ${
+            className={`ml-1 inline-block shrink-0 text-[0.65rem] text-muted-foreground transition-transform ${
               expanded ? "rotate-90" : ""
             }`}
             aria-hidden
@@ -404,34 +396,22 @@ export function CollectionSection({
           </span>
         </button>
         {onRenameCollection && !editingName && (
-          <StatefulPopover
-            placement="bottomRight"
-            content={({ close }) => (
-              <div className="py-1" role="menu">
+          <DropdownMenu>
+            <DropdownMenuTrigger
+              render={
                 <button
                   type="button"
-                  role="menuitem"
-                  className="w-full px-3 py-2 text-left text-sm text-[var(--color-text)] hover:bg-surface-hover"
-                  onClick={() => {
-                    startEditingName();
-                    close();
-                  }}
-                >
-                  Rename
-                </button>
-              </div>
-            )}
-            overrides={sidebarPopoverOverrides}
-          >
-            <button
-              type="button"
-              className="shrink-0 rounded p-1 text-text-muted hover:bg-surface-hover hover:text-[var(--color-text)]"
-              aria-label="Collection menu"
-              aria-haspopup="true"
+                  className="shrink-0 rounded p-1 text-muted-foreground hover:bg-accent hover:text-foreground"
+                  aria-label="Collection menu"
+                />
+              }
             >
               ⋯
-            </button>
-          </StatefulPopover>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => startEditingName()}>Rename</DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         )}
       </div>
       {expanded && (
