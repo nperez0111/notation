@@ -81,8 +81,9 @@ function PropertyValueInput({
         type="number"
         value={num}
         onChange={(e) => {
-          const v = e.target.value;
-          onChange(v === "" ? undefined : Number(v));
+          const raw = e.currentTarget.value;
+          const next = e.currentTarget.valueAsNumber;
+          onChange(raw === "" || Number.isNaN(next) ? undefined : next);
         }}
         onBlur={onBlur}
         placeholder="0"

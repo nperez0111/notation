@@ -158,7 +158,9 @@ export function DocumentListItem({
           </span>
         </span>
       </button>
-      {(onCreateChild || onDelete) && (
+      {(onCreateChild ||
+        onDelete ||
+        (blueskyConnected && (onPublish || (doc.publishedUri && onUnpublish)))) && (
         <div className="pointer-events-none absolute right-1.5 top-1/2 flex -translate-y-1/2 items-center gap-0.5 opacity-0 transition-opacity group-hover:opacity-100">
           {onCreateChild && (
             <button
@@ -202,10 +204,7 @@ export function DocumentListItem({
                 <DropdownMenuItem onClick={() => void onUnpublish()}>Unpublish</DropdownMenuItem>
               )}
               {onDelete && (
-                <DropdownMenuItem
-                  className="text-destructive"
-                  onClick={() => setConfirmOpen(true)}
-                >
+                <DropdownMenuItem className="text-destructive" onClick={() => setConfirmOpen(true)}>
                   Delete
                 </DropdownMenuItem>
               )}
@@ -230,7 +229,10 @@ export function DocumentListItem({
               <AlertDialogCancel>Cancel</AlertDialogCancel>
               <AlertDialogAction
                 className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                onClick={() => void onDelete()}
+                onClick={() => {
+                  setConfirmOpen(false);
+                  void onDelete();
+                }}
               >
                 Delete
               </AlertDialogAction>

@@ -463,7 +463,7 @@ export default function App() {
             Loading…
           </div>
         ) : currentDoc ? (
-          <div className="h-screen pr-2 pb-12 mb-2 mr-2 mt-2 pl-0 rounded-xl border border-border bg-popover overflow-auto">
+          <div className="m-2 min-h-0 flex-1 overflow-auto rounded-xl border border-border bg-popover pr-2 pb-12 pl-0">
             <DocumentEditor
               key={currentDoc.id}
               documentId={currentDoc.id}

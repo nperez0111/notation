@@ -214,6 +214,7 @@ export function SettingsModal({
             ) : (
               <div className="flex flex-col gap-2">
                 <input
+                  aria-label="Bluesky handle"
                   type="text"
                   placeholder="your-handle.bsky.social"
                   value={bskyHandle}
@@ -221,6 +222,7 @@ export function SettingsModal({
                   className="rounded-md border border-border bg-card px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:border-ring focus:outline-none"
                 />
                 <input
+                  aria-label="Bluesky app password"
                   type="password"
                   placeholder="xxxx-xxxx-xxxx-xxxx"
                   value={bskyAppPassword}
